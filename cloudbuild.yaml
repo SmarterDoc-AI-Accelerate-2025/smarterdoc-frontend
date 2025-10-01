@@ -1,0 +1,19 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://smarterdoc-backend-1094971678787.us-central1.run.app'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/smarterdoc-frontend'
+      - '.'
+    id: 'build-frontend'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/smarterdoc-frontend']
+    id: 'push-frontend'
+
+images:
+  - 'gcr.io/$PROJECT_ID/smarterdoc-frontend'
