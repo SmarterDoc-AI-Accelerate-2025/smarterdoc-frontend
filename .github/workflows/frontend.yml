@@ -19,11 +19,14 @@ jobs:
 
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
 
     - name: Build & Push Frontend Image
       run: |
-        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/smarterdoc-frontend \
-          --substitutions=_NEXT_PUBLIC_API_URL="https://smarterdoc-backend-${{ secrets.GCP_PROJECT_ID }}.${{ secrets.REGION }}.run.app"
+        gcloud builds submit \
+          --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/smarterdoc-frontend \
+          --build-arg NEXT_PUBLIC_API_URL="https://smarterdoc-backend-${{ secrets.GCP_PROJECT_ID }}.${{ secrets.REGION }}.run.app"
 
     - name: Deploy to Cloud Run
       run: |
@@ -32,5 +35,4 @@ jobs:
           --platform managed \
           --region ${{ secrets.REGION }} \
           --allow-unauthenticated \
-          --port 3000 \
-          --set-env-vars NEXT_PUBLIC_API_URL="https://smarterdoc-backend-${{ secrets.GCP_PROJECT_ID }}.${{ secrets.REGION }}.run.app"
+          --port 3000
