@@ -4,37 +4,27 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
-
-# Copy package files first
 COPY package*.json ./
-
 RUN npm install
-
-# Copy source code
 COPY . .
 
-# Make sure NODE_ENV is production
 ENV NODE_ENV=production
 
-# Accept API URL as build argument
+# Accept API URL and Google Maps key as build arguments
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
-# Build the Next.js app (API URL gets baked in here)
+# Expose them as environment variables for Next.js build
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+
 RUN npm run build
 
 # -----------------------
 # Run stage
 # -----------------------
 FROM node:20-alpine
-
 WORKDIR /app
-
-# Copy built app from builder
 COPY --from=builder /app ./
-
-# Expose port
 EXPOSE 3000
-
-# Run Next.js in production
 CMD ["npm", "start"]
