@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -16,15 +17,23 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-pink-100 to-purple-100 flex flex-col items-center px-4 py-16">
+    <main className="min-h-screen flex flex-col items-center px-4 py-16">
+      <Image
+        src="/homebg.png"
+        alt="Background gradient"
+        fill
+        priority
+        className="object-cover z-0"
+      />
+
       {/* Header */}
-      <header className="flex items-center justify-start w-full max-w-5xl mb-12">
+      <header className="flex items-center justify-start w-full max-w-5xl mb-12 z-10">
         <i className="ri-hearts-fill text-3xl text-purple-600 mr-2"></i>
-        <h1 className="text-2xl font-bold text-gray-800">Hackathon</h1>
+        <h1 className="text-2xl font-bold text-gray-800">SmartDoc</h1>
       </header>
 
       {/* Title */}
-      <section className="text-center mb-10">
+      <section className="text-center mb-10 z-10">
         <h2 className="text-4xl font-bold text-purple-700 mb-2">
           Smart guidance to the right doctor
         </h2>
@@ -33,45 +42,64 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Search Row 1 */}
-      <div className="flex flex-wrap justify-center gap-3 w-full max-w-4xl mb-6">
-        <input
-          type="text"
-          placeholder="Search"
-          className="flex-1 min-w-[150px] rounded-full border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-purple-400 outline-none"
-        />
-        <input
-          type="text"
-          placeholder="Location"
-          className="flex-1 min-w-[150px] rounded-full border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-purple-400 outline-none"
-        />
-        <input
-          type="text"
-          placeholder="Insurance"
-          className="flex-1 min-w-[150px] rounded-full border border-gray-300 px-4 py-2 shadow-sm focus:ring-2 focus:ring-purple-400 outline-none"
-        />
-        <button className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full shadow-md">
-          <i className="ri-search-line text-xl"></i>
+      {/* Search Row 1 - Horizontal layout with labels */}
+      <div className="flex flex-wrap items-center justify-center gap-4 w-full max-w-4xl mb-6 z-10 bg-white rounded-full border border-gray-300 shadow-sm px-6 py-4">
+        <div className="flex items-center flex-1 min-w-[60px]">
+          <i className="ri-search-line text-gray-400 mr-2"></i>
+          <input
+            type="text"
+            placeholder="Search"
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+          />
+        </div>
+        
+        <div className="flex items-center flex-1 min-w-[60px]">
+          <i className="ri-map-pin-line text-gray-400 mr-2"></i>
+          <input
+            type="text"
+            placeholder="Location"
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+          />
+        </div>
+        
+        <div className="flex items-center flex-1 min-w-[60px]">
+          <i className="ri-shield-check-line text-gray-400 mr-2"></i>
+          <input
+            type="text"
+            placeholder="Insurance"
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+          />
+        </div>
+        
+        <button className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors">
+          <i className="ri-arrow-right-line text-xl"></i>
         </button>
       </div>
 
-      {/* Search Row 2 */}
-      <div className="flex items-center w-full max-w-4xl rounded-full border border-gray-300 bg-white shadow-sm px-4 py-3">
+      {/* Search Row 2 - Single question input */}
+      <div className="flex items-center w-full max-w-4xl rounded-full border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
         <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
         <input
           type="text"
           placeholder="Ask a question..."
-          className="flex-1 outline-none text-gray-700"
+          className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
         />
-        <button className="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full shadow-md">
+        <button className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors ml-2">
           <i className="ri-mic-line text-xl"></i>
         </button>
       </div>
 
-      {/* Backend connectivity test */}
-      <p className="text-sm text-gray-500 mt-8">
-        {message ? `Backend says: ${message}` : "Loading backend connection..."}
-      </p>
+      {/* Robot image */}
+      <div className="absolute bottom-30 left-1/2 -translate-x-1/2 w-[260px] md:w-[320px] lg:w-[380px] z-10">
+        <Image
+          src="/robot.png"
+          alt="Doctor robot"
+          width={400}
+          height={400}
+          className="w-full h-auto"
+        />
+      </div>
+
     </main>
   );
 }
