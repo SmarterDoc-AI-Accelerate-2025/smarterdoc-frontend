@@ -33,7 +33,9 @@ jobs:
       run: |
         docker build \
           --build-arg NEXT_PUBLIC_API_URL="https://smarterdoc-backend-${{ secrets.GCP_PROJECT_ID }}.${{ secrets.REGION }}.run.app" \
+          --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY }}" \
           -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/smarterdoc-frontend .
+
 
     # Push Docker image
     - name: Push Docker Image
