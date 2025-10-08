@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import DoctorMap from "@/components/DoctorMap";
 
 export default function DoctorPage() {
   const doctors = [
@@ -11,27 +12,33 @@ export default function DoctorPage() {
       rating: 4.2,
       reviews: 424,
       address: "120 Hobart St · Utica, NY 13501",
-      time: "16 minutes",
-      img: "/doctor.png", // add a placeholder image in public/doctor.png
-    },
-    {
-      id: 2,
-      name: "Dr. Mark",
-      specialty: "Family Medicine",
-      rating: 4.2,
-      reviews: 424,
-      address: "120 Hobart St · Utica, NY 13501",
+      lat: 43.1009,
+      lng: -75.2327,
       time: "16 minutes",
       img: "/doctor.png",
     },
     {
+      id: 2,
+      name: "Dr. Lisa",
+      specialty: "Dermatology",
+      rating: 4.6,
+      reviews: 320,
+      address: "50 Main St · Utica, NY 13501",
+      lat: 43.1059,
+      lng: -75.2301,
+      time: "20 minutes",
+      img: "/doctor.png",
+    },
+    {
       id: 3,
-      name: "Dr. Mark",
-      specialty: "Family Medicine",
-      rating: 4.2,
-      reviews: 424,
-      address: "120 Hobart St · Utica, NY 13501",
-      time: "16 minutes",
+      name: "Dr. Kevin",
+      specialty: "Pediatrics",
+      rating: 4.8,
+      reviews: 285,
+      address: "80 Broad St · Utica, NY 13501",
+      lat: 43.1021,
+      lng: -75.2408,
+      time: "10 minutes",
       img: "/doctor.png",
     },
   ];
@@ -120,7 +127,7 @@ export default function DoctorPage() {
 
           {/* Map Placeholder */}
           <div className="rounded-xl bg-gray-200 flex items-center justify-center text-gray-500">
-            🗺️ Map preview
+            <DoctorMap doctors={doctors} />
           </div>
         </div>
       </section>
