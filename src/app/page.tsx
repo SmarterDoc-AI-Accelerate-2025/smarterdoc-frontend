@@ -1,20 +1,92 @@
 "use client";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://smarterdoc-backend-1094971678787.us-central1.run.app";
 
 export default function Home() {
-  const [message, setMessage] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [insuranceInput, setInsuranceInput] = useState("");
+  const [questionInput, setQuestionInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  useEffect(() => {
-    fetch(`${API_URL}/hello`)
-      .then((res) => res.json())
-      .then((data) => setMessage(data.message))
-      .catch(console.error);
-  }, []);
+  const handleTextSearch = async () => {
+  if (!searchInput.trim()) return;
+  
+  setIsLoading(true);
+  try {
+    const response = await fetch(`${API_URL}/v1/search/doctors`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: searchInput,
+        location: locationInput,
+        insurance: insuranceInput,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Search response:', data); // Debug log
+    
+    // Navigate to doctor page with the doctors array
+    router.push(`/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`);
+  } catch (error) {
+    console.error("Error searching doctors:", error);
+    // Fallback: navigate to doctor page with empty data
+    router.push("/doctor");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const handleVoiceSearch = async () => {
+  setIsLoading(true);
+  try {
+    const response = await fetch(`${API_URL}/v1/search/voice`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        voice_query: "user_voice_query",
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Voice search response:', data); // Debug log
+    
+    // Navigate to doctor page with the doctors array
+    router.push(`/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`);
+  } catch (error) {
+    console.error("Error with voice search:", error);
+    // Fallback: navigate to doctor page with empty data
+    router.push("/doctor");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  const handleQuestionSearch = () => {
+    if (questionInput.trim()) {
+      setSearchInput(questionInput);
+      handleTextSearch();
+    }
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-16">
@@ -49,30 +121,44 @@ export default function Home() {
           <input
             type="text"
             placeholder="Search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
         </div>
-        
+
         <div className="flex items-center flex-1 min-w-[60px]">
           <i className="ri-map-pin-line text-gray-400 mr-2"></i>
           <input
             type="text"
             placeholder="Location"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
             className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
         </div>
-        
+
         <div className="flex items-center flex-1 min-w-[60px]">
           <i className="ri-shield-check-line text-gray-400 mr-2"></i>
           <input
             type="text"
             placeholder="Insurance"
+            value={insuranceInput}
+            onChange={(e) => setInsuranceInput(e.target.value)}
             className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
         </div>
-        
-        <button className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors">
-          <i className="ri-arrow-right-line text-xl"></i>
+
+        <button
+          onClick={handleTextSearch}
+          disabled={isLoading}
+          className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors disabled:opacity-50"
+        >
+          {isLoading ? (
+            <i className="ri-loader-4-line animate-spin text-xl"></i>
+          ) : (
+            <i className="ri-arrow-right-line text-xl"></i>
+          )}
         </button>
       </div>
 
@@ -82,10 +168,21 @@ export default function Home() {
         <input
           type="text"
           placeholder="Ask a question..."
+          value={questionInput}
+          onChange={(e) => setQuestionInput(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleQuestionSearch()}
           className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
         />
-        <button className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors ml-2">
-          <i className="ri-mic-line text-xl"></i>
+        <button
+          onClick={handleVoiceSearch}
+          disabled={isLoading}
+          className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full shadow-md transition-colors ml-2 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <i className="ri-loader-4-line animate-spin text-xl"></i>
+          ) : (
+            <i className="ri-mic-line text-xl"></i>
+          )}
         </button>
       </div>
 
@@ -99,7 +196,6 @@ export default function Home() {
           className="w-full h-auto"
         />
       </div>
-
     </main>
   );
 }
