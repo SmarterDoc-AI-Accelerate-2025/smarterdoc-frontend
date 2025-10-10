@@ -1,4 +1,4 @@
-# smarterdoc-backend
+# smarterdoc-frontend
 
 ## GCP Link
 Link: https://smarterdoc-frontend-1094971678787.us-central1.run.app/
