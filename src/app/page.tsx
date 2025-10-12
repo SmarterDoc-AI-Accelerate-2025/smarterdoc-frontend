@@ -126,7 +126,7 @@ export default function Home() {
       </section>
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-6 w-full max-w-4xl z-10 space-y-4">
         {/* Search Row 1 - Horizontal layout with labels */}
-        <div className="flex items-center h-18 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
+        <div className="flex items-center h-14 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
           <div className="flex items-center flex-1 min-w-[60px] border-r border-gray-300 mr-5">
             
             <input
@@ -160,7 +160,7 @@ export default function Home() {
         </div>
 
         {/* Search Row 2 - Single question input */}
-        <div className="flex items-center h-18 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
+        <div className="flex items-center h-14 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
           <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
           <input
             type="text"
