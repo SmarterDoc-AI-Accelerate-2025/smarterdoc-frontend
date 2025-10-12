@@ -2,7 +2,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import DoctorMap from "@/components/DoctorMap";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Doctor {
   id: number;
@@ -18,7 +18,6 @@ interface Doctor {
   insurance_accepted?: string[];
 }
 
-// Default doctors data (fallback)
 const defaultDoctors: Doctor[] = [
   {
     id: 1,
@@ -31,7 +30,7 @@ const defaultDoctors: Doctor[] = [
     lng: -75.2327,
     time: "16 minutes",
     img: "/doctor.png",
-    insurance_accepted: ["Aetna", "Blue Cross", "Cigna"]
+    insurance_accepted: ["Aetna", "Blue Cross", "Cigna"],
   },
   {
     id: 2,
@@ -44,7 +43,7 @@ const defaultDoctors: Doctor[] = [
     lng: -75.2301,
     time: "20 minutes",
     img: "/doctor.png",
-    insurance_accepted: ["Aetna", "United Healthcare"]
+    insurance_accepted: ["Aetna", "United Healthcare"],
   },
   {
     id: 3,
@@ -57,135 +56,119 @@ const defaultDoctors: Doctor[] = [
     lng: -75.2408,
     time: "10 minutes",
     img: "/doctor.png",
-    insurance_accepted: ["Blue Cross", "Medicaid"]
+    insurance_accepted: ["Blue Cross", "Medicaid"],
   },
 ];
 
-// Main component that uses searchParams
 function DoctorPageContent() {
   const searchParams = useSearchParams();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [insuranceInput, setInsuranceInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchDoctorsData = async () => {
-      setIsLoading(true);
-      try {
-        // Get doctors data from URL parameters
-        const doctorsParam = searchParams.get('doctors');
-        
-        if (doctorsParam) {
-          try {
-            const parsedDoctors = JSON.parse(decodeURIComponent(doctorsParam));
-            
-            // Ensure doctors is always an array
-            if (Array.isArray(parsedDoctors)) {
-              setDoctors(parsedDoctors);
-            } else if (parsedDoctors && Array.isArray(parsedDoctors.doctors)) {
-              // Handle case where we get the full response object
-              setDoctors(parsedDoctors.doctors);
-            } else {
-              console.warn('Invalid doctors data format, using defaults');
-              setDoctors(defaultDoctors);
-            }
-          } catch (parseError) {
-            console.error("Error parsing doctors data:", parseError);
-            setDoctors(defaultDoctors);
-          }
-        } else {
-          // No doctors parameter, use defaults
-          setDoctors(defaultDoctors);
-        }
-      } catch (error) {
-        console.error("Error loading doctors data:", error);
+    const doctorsParam = searchParams.get("doctors");
+    try {
+      if (doctorsParam) {
+        const parsed = JSON.parse(decodeURIComponent(doctorsParam));
+        setDoctors(Array.isArray(parsed) ? parsed : parsed.doctors || defaultDoctors);
+      } else {
         setDoctors(defaultDoctors);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchDoctorsData();
+    } catch {
+      setDoctors(defaultDoctors);
+    }
   }, [searchParams]);
 
-  // Safe rendering with loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <i className="ri-loader-4-line animate-spin text-3xl text-purple-600 mb-4"></i>
-          <p className="text-gray-600">Loading doctors...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Ensure doctors is always an array before rendering
-  const doctorsToRender = Array.isArray(doctors) ? doctors : [];
+  const handleSearch = async () => {
+    if (!searchInput.trim()) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://smarterdoc-backend-1094971678787.us-central1.run.app/v1/search/doctors`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: searchInput,
+            location: locationInput,
+            insurance: insuranceInput,
+          }),
+        }
+      );
+      const data = await response.json();
+      router.push(`/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <DoctorPageLayout doctors={doctorsToRender} />
-  );
-}
+    <main className="relative min-h-screen flex flex-col items-center px-6 py-10">
+      {/* Background */}
+      <Image
+        src="/homebg.png"
+        alt="Background"
+        fill
+        priority
+        className="object-cover z-0"
+      />
 
-// Layout component that doesn't use searchParams
-function DoctorPageLayout({ doctors }: { doctors: Doctor[] }) {
-  const doctorsToRender = Array.isArray(doctors) ? doctors : [];
-
-  return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10">
       {/* Header */}
-      <header className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-2">
-          <i className="ri-hearts-fill text-3xl text-purple-600"></i>
-          <h1 className="text-2xl font-bold text-gray-800">SmartDoc</h1>
+      <header className="flex items-center justify-between w-full max-w-6xl mb-8 z-10">
+        <div className="flex items-center">
+          <Image src="/logo.png" alt="SmartDoc Logo" width={32} height={32} className="mr-2" />
+          <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Search bar */}
+        <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
           <input
             type="text"
             placeholder="Search"
-            className="rounded-full border border-gray-300 px-3 py-2 text-sm"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400"
           />
           <input
             type="text"
             placeholder="Location"
-            className="rounded-full border border-gray-300 px-3 py-2 text-sm"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
           />
           <input
             type="text"
             placeholder="Insurance"
-            className="rounded-full border border-gray-300 px-3 py-2 text-sm"
+            value={insuranceInput}
+            onChange={(e) => setInsuranceInput(e.target.value)}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
           />
-          <button className="bg-purple-500 hover:bg-purple-600 text-white p-2 rounded-full">
-            <i className="ri-search-line text-lg"></i>
+          <button
+            onClick={handleSearch}
+            disabled={isLoading}
+            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          >
+            {isLoading ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-search-line"></i>}
           </button>
         </div>
       </header>
 
-      {/* Filter Buttons */}
-      <div className="flex gap-3 mb-6">
-        {["Ranking", "Distance", "Time", "Insurance"].map((filter) => (
-          <button
-            key={filter}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-100 text-sm font-medium"
-          >
-            {filter} <i className="ri-arrow-down-s-line"></i>
-          </button>
-        ))}
-      </div>
-
-      {/* Recommended Section */}
-      <section className="bg-purple-50 rounded-xl p-6 shadow-sm mb-8">
-        <h2 className="text-lg font-semibold text-purple-600 mb-3">
-          {doctorsToRender.length > 0 
-            ? `Your ${doctorsToRender.length} specially AI-recommended doctors.`
-            : "No doctors found matching your criteria."
-          }
+      {/* Recommended Doctors */}
+      <section className="backdrop-blur-md bg-white/60 rounded-3xl shadow-lg p-6 w-full max-w-6xl z-10 mb-10">
+        <h2 className="text-xl font-semibold text-[#433C50] mb-4">
+          Your {doctors.length} specially{" "}
+          <span className="text-[#5F72BE]">AI-recommended</span> doctors
         </h2>
 
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-4">
-            {doctorsToRender.map((doc) => (
+            {doctors.map((doc) => (
               <div
                 key={doc.id}
                 className="flex items-center bg-white rounded-xl p-4 border border-gray-100 shadow-sm"
@@ -207,83 +190,36 @@ function DoctorPageLayout({ doctors }: { doctors: Doctor[] }) {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">{doc.address}</p>
-                  <p className="text-sm text-gray-400">{doc.time}</p>
-                  {doc.insurance_accepted && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      Insurance: {doc.insurance_accepted.join(", ")}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-500">
+                    Insurance: {doc.insurance_accepted?.join(", ")}
+                  </p>
                 </div>
                 <label className="flex items-center text-sm text-gray-600">
-                  <input type="checkbox" className="mr-2" /> Agent book
+                  <input type="checkbox" className="mr-2" /> AI Appointment
                 </label>
               </div>
             ))}
           </div>
 
           {/* Map */}
-          <div className="rounded-xl bg-gray-200 flex items-center justify-center text-gray-500">
-            <DoctorMap doctors={doctorsToRender} />
+          <div className="rounded-xl overflow-hidden">
+            <DoctorMap doctors={doctors} />
           </div>
         </div>
       </section>
-
-      {/* Explore More - Show more doctors if available */}
-      {doctorsToRender.length > 3 && (
-        <section className="bg-white rounded-xl p-6 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4">
-            Explore more doctors
-          </h3>
-          <div className="grid md:grid-cols-2 gap-6">
-            {doctorsToRender.slice(3, 7).map((doc) => (
-              <div
-                key={doc.id}
-                className="flex items-center bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-sm"
-              >
-                <Image
-                  src={doc.img || "/doctor.png"}
-                  alt={doc.name}
-                  width={80}
-                  height={80}
-                  className="rounded-full mr-4"
-                />
-                <div className="flex-1">
-                  <h3 className="font-bold text-gray-800">{doc.name}</h3>
-                  <p className="text-sm text-gray-500">{doc.specialty}</p>
-                  <div className="flex items-center text-yellow-500 text-sm my-1">
-                    <i className="ri-star-fill"></i>
-                    <span className="ml-1 text-gray-700">
-                      {doc.rating} ({doc.reviews})
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600">{doc.address}</p>
-                  <p className="text-sm text-gray-400">{doc.time}</p>
-                </div>
-                <label className="flex items-center text-sm text-gray-600">
-                  <input type="checkbox" className="mr-2" /> Agent book
-                </label>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </main>
   );
 }
 
-// Main page component with Suspense boundary
 export default function DoctorPage() {
   return (
-    <Suspense fallback={
-      <main className="min-h-screen bg-gray-50 px-6 py-10">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <i className="ri-loader-4-line animate-spin text-3xl text-purple-600 mb-4"></i>
-            <p className="text-gray-600">Loading...</p>
-          </div>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <i className="ri-loader-4-line animate-spin text-3xl text-purple-600"></i>
         </div>
-      </main>
-    }>
+      }
+    >
       <DoctorPageContent />
     </Suspense>
   );
