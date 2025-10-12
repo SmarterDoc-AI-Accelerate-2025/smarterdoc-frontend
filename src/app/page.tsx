@@ -186,7 +186,7 @@ export default function Home() {
           <button
             onClick={handleTextSearch}
             disabled={isLoading}
-            className="cursor-pointer hover:bg-gray-100 text-white p-2 rounded-full shadow-md transition-colors ml-2 disabled:opacity-50"
+            className="flex items-center justify-center h-9 w-9 cursor-pointer hover:bg-gray-100 text-white p-2 rounded-full shadow-md transition-colors ml-2 disabled:opacity-50"
             style={{ backgroundColor: "#433C50" }}
           >
             {isLoading ? (
