@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 
 import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function DoctorDetailPage() {
   return (
@@ -26,6 +26,37 @@ function DoctorDetailPageContent() {
   const [doctor, setDoctor] = useState<any>();
   const [activeTab, setActiveTab] = useState("about");
   const [isLoading, setIsLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [locationInput, setLocationInput] = useState("");
+  const [insuranceInput, setInsuranceInput] = useState("");
+  const router = useRouter();
+
+  const handleSearch = async () => {
+    if (!searchInput.trim()) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(
+        `https://smarterdoc-backend-1094971678787.us-central1.run.app/v1/search/doctors`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: searchInput,
+            location: locationInput,
+            insurance: insuranceInput,
+          }),
+        }
+      );
+      const data = await response.json();
+      router.push(
+        `/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`
+      );
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!doctorId) {
@@ -101,25 +132,39 @@ function DoctorDetailPageContent() {
           <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
         </div>
 
-        {/* Search Bar */}
-        <div className="flex items-center h-12 w-[600px] rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
+        {/* Search bar */}
+        <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
           <input
             type="text"
             placeholder="Search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400"
           />
           <input
             type="text"
             placeholder="Location"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
             className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
           />
           <input
             type="text"
             placeholder="Insurance"
+            value={insuranceInput}
+            onChange={(e) => setInsuranceInput(e.target.value)}
             className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
           />
-          <button className="ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition">
-            <i className="ri-search-line"></i>
+          <button
+            onClick={handleSearch}
+            disabled={isLoading}
+            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          >
+            {isLoading ? (
+              <i className="ri-loader-4-line animate-spin"></i>
+            ) : (
+              <i className="ri-search-line"></i>
+            )}
           </button>
         </div>
       </header>
@@ -188,7 +233,11 @@ function DoctorDetailPageContent() {
         <div className="flex items-center space-x-4 mb-4 border-b border-gray-200">
           {[
             { id: "about", label: "About Doctor", icon: "ri-user-3-line" },
-            { id: "education", label: "Education", icon: "ri-graduation-cap-line" },
+            {
+              id: "education",
+              label: "Education",
+              icon: "ri-graduation-cap-line",
+            },
             { id: "insurance", label: "Insurance", icon: "ri-bank-card-line" },
             { id: "locations", label: "Locations", icon: "ri-map-pin-line" },
           ].map((tab) => (
@@ -213,16 +262,21 @@ function DoctorDetailPageContent() {
               <p className="text-gray-600 mb-4">Rheumatology Specialist</p>
               <h4 className="font-semibold text-gray-700 mb-2">Language</h4>
               <p className="text-gray-600 mb-4">English, Spanish</p>
-              <h4 className="font-semibold text-gray-700 mb-2">Clinical Experience</h4>
+              <h4 className="font-semibold text-gray-700 mb-2">
+                Clinical Experience
+              </h4>
               <ul className="list-disc list-inside text-gray-600 space-y-2 text-sm">
                 <li>
-                  2015–2019: Attending Physician, Department of Rheumatology, City University Medical Center.
+                  2015–2019: Attending Physician, Department of Rheumatology,
+                  City University Medical Center.
                 </li>
                 <li>
-                  2019–2022: Senior Clinical Research Physician, National Institute of Immunology.
+                  2019–2022: Senior Clinical Research Physician, National
+                  Institute of Immunology.
                 </li>
                 <li>
-                  2022–Present: Director, Connective Tissue Clinic, National University Hospital.
+                  2022–Present: Director, Connective Tissue Clinic, National
+                  University Hospital.
                 </li>
               </ul>
               <h4 className="font-semibold text-gray-700 mt-4 mb-1">Gender</h4>
@@ -233,19 +287,28 @@ function DoctorDetailPageContent() {
           {activeTab === "education" && (
             <div>
               <h4 className="font-semibold text-gray-700 mb-2">Education</h4>
-              <p className="text-gray-600 mb-4">Doctor of Dental Surgery (DDS)</p>
+              <p className="text-gray-600 mb-4">
+                Doctor of Dental Surgery (DDS)
+              </p>
               <h4 className="font-semibold text-gray-700 mb-2">Publications</h4>
               <p className="text-gray-600 mb-4">
-                Authored 5+ research papers in international journals on autoimmune disorders and connective tissue diseases.
+                Authored 5+ research papers in international journals on
+                autoimmune disorders and connective tissue diseases.
               </p>
-              <h4 className="font-semibold text-gray-700 mb-2">Certification</h4>
-              <p className="text-gray-600">Licensed Medical Practitioner — USA, Canada</p>
+              <h4 className="font-semibold text-gray-700 mb-2">
+                Certification
+              </h4>
+              <p className="text-gray-600">
+                Licensed Medical Practitioner — USA, Canada
+              </p>
             </div>
           )}
 
           {activeTab === "insurance" && (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">Insurance Accepted</h4>
+              <h4 className="font-semibold text-gray-700 mb-2">
+                Insurance Accepted
+              </h4>
               <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 <li>Aetna</li>
                 <li>Blue Cross</li>
@@ -257,7 +320,9 @@ function DoctorDetailPageContent() {
 
           {activeTab === "locations" && (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">Clinic Locations</h4>
+              <h4 className="font-semibold text-gray-700 mb-2">
+                Clinic Locations
+              </h4>
               <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 <li>120 Hobart St · Utica, NY 13501</li>
                 <li>50 Main St · Utica, NY 13501</li>
