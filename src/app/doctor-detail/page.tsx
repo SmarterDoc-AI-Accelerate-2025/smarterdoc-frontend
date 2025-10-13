@@ -1,10 +1,25 @@
 "use client";
 export const dynamic = "force-dynamic";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
 export default function DoctorDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-screen">
+          <i className="ri-loader-4-line animate-spin text-3xl text-purple-600"></i>
+        </div>
+      }
+    >
+      <DoctorDetailPageContent />
+    </Suspense>
+  );
+}
+
+function DoctorDetailPageContent() {
   const searchParams = useSearchParams();
   const doctorId = searchParams.get("id");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,6 +52,15 @@ export default function DoctorDetailPage() {
         setDoctor(data);
       } catch (error) {
         console.error("Error fetching doctor detail:", error);
+        setDoctor({
+          name: "Dr. Mark",
+          specialty: "Family Medicine",
+          rating: 4.2,
+          reviews: 424,
+          address: "120 Hobart St · Utica, NY 13501",
+          insurance: "CareOregon",
+          img: "/doctor.png",
+        });
       } finally {
         setIsLoading(false);
       }
@@ -161,15 +185,10 @@ export default function DoctorDetailPage() {
 
       {/* Tab Section */}
       <section className="w-full max-w-6xl z-10">
-        {/* Tab Buttons */}
         <div className="flex items-center space-x-4 mb-4 border-b border-gray-200">
           {[
             { id: "about", label: "About Doctor", icon: "ri-user-3-line" },
-            {
-              id: "education",
-              label: "Education",
-              icon: "ri-graduation-cap-line",
-            },
+            { id: "education", label: "Education", icon: "ri-graduation-cap-line" },
             { id: "insurance", label: "Insurance", icon: "ri-bank-card-line" },
             { id: "locations", label: "Locations", icon: "ri-map-pin-line" },
           ].map((tab) => (
@@ -187,7 +206,6 @@ export default function DoctorDetailPage() {
           ))}
         </div>
 
-        {/* Tab Content */}
         <div className="bg-white rounded-xl shadow-md p-6">
           {activeTab === "about" && (
             <div>
@@ -195,24 +213,16 @@ export default function DoctorDetailPage() {
               <p className="text-gray-600 mb-4">Rheumatology Specialist</p>
               <h4 className="font-semibold text-gray-700 mb-2">Language</h4>
               <p className="text-gray-600 mb-4">English, Spanish</p>
-              <h4 className="font-semibold text-gray-700 mb-2">
-                Clinical Experience
-              </h4>
+              <h4 className="font-semibold text-gray-700 mb-2">Clinical Experience</h4>
               <ul className="list-disc list-inside text-gray-600 space-y-2 text-sm">
                 <li>
-                  2015–2019: Attending Physician, Department of Rheumatology,
-                  City University Medical Center. Treated autoimmune and
-                  connective tissue diseases.
+                  2015–2019: Attending Physician, Department of Rheumatology, City University Medical Center.
                 </li>
                 <li>
-                  2019–2022: Senior Clinical Research Physician, National
-                  Institute of Immunology. Published multiple peer-reviewed
-                  papers.
+                  2019–2022: Senior Clinical Research Physician, National Institute of Immunology.
                 </li>
                 <li>
-                  2022–Present: Director, Connective Tissue Clinic, National
-                  University Hospital. Led multidisciplinary teams and education
-                  workshops.
+                  2022–Present: Director, Connective Tissue Clinic, National University Hospital.
                 </li>
               </ul>
               <h4 className="font-semibold text-gray-700 mt-4 mb-1">Gender</h4>
@@ -223,28 +233,19 @@ export default function DoctorDetailPage() {
           {activeTab === "education" && (
             <div>
               <h4 className="font-semibold text-gray-700 mb-2">Education</h4>
-              <p className="text-gray-600 mb-4">
-                Doctor of Dental Surgery (DDS)
-              </p>
+              <p className="text-gray-600 mb-4">Doctor of Dental Surgery (DDS)</p>
               <h4 className="font-semibold text-gray-700 mb-2">Publications</h4>
               <p className="text-gray-600 mb-4">
-                Authored 5+ research papers in international journals on
-                autoimmune disorders and connective tissue diseases.
+                Authored 5+ research papers in international journals on autoimmune disorders and connective tissue diseases.
               </p>
-              <h4 className="font-semibold text-gray-700 mb-2">
-                Certification
-              </h4>
-              <p className="text-gray-600">
-                Licensed Medical Practitioner — USA, Canada
-              </p>
+              <h4 className="font-semibold text-gray-700 mb-2">Certification</h4>
+              <p className="text-gray-600">Licensed Medical Practitioner — USA, Canada</p>
             </div>
           )}
 
           {activeTab === "insurance" && (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">
-                Insurance Accepted
-              </h4>
+              <h4 className="font-semibold text-gray-700 mb-2">Insurance Accepted</h4>
               <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 <li>Aetna</li>
                 <li>Blue Cross</li>
@@ -256,9 +257,7 @@ export default function DoctorDetailPage() {
 
           {activeTab === "locations" && (
             <div>
-              <h4 className="font-semibold text-gray-700 mb-2">
-                Clinic Locations
-              </h4>
+              <h4 className="font-semibold text-gray-700 mb-2">Clinic Locations</h4>
               <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                 <li>120 Hobart St · Utica, NY 13501</li>
                 <li>50 Main St · Utica, NY 13501</li>
