@@ -3,20 +3,39 @@ import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DatePicker from "react-datepicker";
+import Header from "@/components/Header";
 
 export default function AppointmentPage() {
   const router = useRouter();
 
   // Fake doctor list (could come from query or backend)
   const [doctors, setDoctors] = useState([
-    { id: 1, name: "Dr. Mark", rating: 4.9, reviews: 120, specialty: "Family Medicine", img: "/doctor.png" },
-    { id: 2, name: "Dr. Mark", rating: 4.9, reviews: 120, specialty: "Family Medicine", img: "/doctor.png" },
-    { id: 3, name: "Dr. Mark", rating: 4.9, reviews: 120, specialty: "Family Medicine", img: "/doctor.png" },
+    {
+      id: 1,
+      name: "Dr. Mark",
+      rating: 4.9,
+      reviews: 120,
+      specialty: "Family Medicine",
+      img: "/doctor.png",
+    },
+    {
+      id: 2,
+      name: "Dr. Mark",
+      rating: 4.9,
+      reviews: 120,
+      specialty: "Family Medicine",
+      img: "/doctor.png",
+    },
+    {
+      id: 3,
+      name: "Dr. Mark",
+      rating: 4.9,
+      reviews: 120,
+      specialty: "Family Medicine",
+      img: "/doctor.png",
+    },
   ]);
 
-  const [searchInput, setSearchInput] = useState("");
-  const [locationInput, setLocationInput] = useState("");
-  const [insuranceInput, setInsuranceInput] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedTime, setSelectedTime] = useState("");
   const [formData, setFormData] = useState({
@@ -69,51 +88,28 @@ export default function AppointmentPage() {
 
   const handleCancel = () => router.push("/doctor");
 
-  const timeSlots = ["17:30", "17:45", "18:00", "18:15", "18:30", "18:45", "19:00"];
+  const timeSlots = [
+    "17:30",
+    "17:45",
+    "18:00",
+    "18:15",
+    "18:30",
+    "18:45",
+    "19:00",
+  ];
 
   return (
     <main className="relative min-h-screen flex flex-col items-center px-6 py-10">
       {/* Background */}
-      <Image src="/homebg.png" alt="Background" fill priority className="object-cover z-0" />
+      <Image
+        src="/homebg.png"
+        alt="Background"
+        fill
+        priority
+        className="object-cover z-0"
+      />
 
-      {/* Header */}
-      <header className="flex items-center justify-between w-full max-w-6xl mb-8 z-10">
-        <div className="flex items-center">
-          <Image src="/logo.png" alt="SmartDoc Logo" width={32} height={32} className="mr-2" />
-          <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
-        </div>
-
-        {/* Search Bar */}
-        <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400"
-          />
-          <input
-            type="text"
-            placeholder="Location"
-            value={locationInput}
-            onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
-          />
-          <input
-            type="text"
-            placeholder="Insurance"
-            value={insuranceInput}
-            onChange={(e) => setInsuranceInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
-          />
-          <button
-            disabled={isLoading}
-            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
-          >
-            {isLoading ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-search-line"></i>}
-          </button>
-        </div>
-      </header>
+      <Header />
 
       {/* Title */}
       <h2 className="text-2xl font-bold text-gray-800 mb-6 z-10">Your Order</h2>
@@ -127,7 +123,13 @@ export default function AppointmentPage() {
             className="flex justify-between items-center bg-white rounded-xl shadow-md p-4 border border-gray-100"
           >
             <div className="flex items-center">
-              <Image src={doc.img} alt={doc.name} width={64} height={64} className="rounded-lg mr-4" />
+              <Image
+                src={doc.img}
+                alt={doc.name}
+                width={64}
+                height={64}
+                className="rounded-lg mr-4"
+              />
               <div>
                 <h4 className="font-semibold text-gray-800">{doc.name}</h4>
                 <div className="flex items-center text-yellow-500 text-sm">
@@ -139,7 +141,10 @@ export default function AppointmentPage() {
                 <p className="text-sm text-gray-500">{doc.specialty}</p>
               </div>
             </div>
-            <button onClick={() => handleDeleteDoctor(doc.id)} className="text-gray-400 hover:text-red-500">
+            <button
+              onClick={() => handleDeleteDoctor(doc.id)}
+              className="text-gray-400 hover:text-red-500"
+            >
               <i className="ri-delete-bin-6-line text-xl"></i>
             </button>
           </div>
@@ -184,24 +189,32 @@ export default function AppointmentPage() {
           <input
             placeholder="Legal first name"
             className="border border-gray-300 rounded-md px-3 py-2 outline-none"
-            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, firstName: e.target.value })
+            }
           />
           <input
             placeholder="Legal last name"
             className="border border-gray-300 rounded-md px-3 py-2 outline-none"
-            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, lastName: e.target.value })
+            }
           />
         </div>
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <input
             placeholder="Date of birth"
             className="border border-gray-300 rounded-md px-3 py-2 outline-none"
-            onChange={(e) => setFormData({ ...formData, birth: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, birth: e.target.value })
+            }
           />
           <input
             placeholder="Email"
             className="border border-gray-300 rounded-md px-3 py-2 outline-none"
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
           />
         </div>
         <input
@@ -218,7 +231,9 @@ export default function AppointmentPage() {
                 type="radio"
                 name="gender"
                 value={g}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, gender: e.target.value })
+                }
               />
               <span>{g}</span>
             </label>
@@ -228,7 +243,9 @@ export default function AppointmentPage() {
               type="radio"
               name="gender"
               value="Others"
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, gender: e.target.value })
+              }
             />
             <span>Others</span>
           </label>
@@ -237,7 +254,9 @@ export default function AppointmentPage() {
         <textarea
           placeholder="Write a comment..."
           className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full h-24"
-          onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, comment: e.target.value })
+          }
         ></textarea>
       </section>
 
