@@ -1,9 +1,8 @@
 "use client";
+export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-
-
 
 export default function DoctorDetailPage() {
   const searchParams = useSearchParams();
@@ -14,6 +13,20 @@ export default function DoctorDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (!doctorId) {
+      setDoctor({
+        name: "Dr. Mark",
+        specialty: "Family Medicine",
+        rating: 4.2,
+        reviews: 424,
+        address: "120 Hobart St · Utica, NY 13501",
+        insurance: "CareOregon",
+        img: "/doctor.png",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const fetchDoctorDetail = async () => {
       try {
         const response = await fetch(
@@ -24,16 +37,6 @@ export default function DoctorDetailPage() {
         setDoctor(data);
       } catch (error) {
         console.error("Error fetching doctor detail:", error);
-        // fallback fake data
-        setDoctor({
-          name: "Dr. Mark",
-          specialty: "Family Medicine",
-          rating: 4.2,
-          reviews: 424,
-          address: "120 Hobart St · Utica, NY 13501",
-          insurance: "CareOregon",
-          img: "/doctor.png",
-        });
       } finally {
         setIsLoading(false);
       }
