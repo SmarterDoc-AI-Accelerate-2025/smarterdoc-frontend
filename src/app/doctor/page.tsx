@@ -70,18 +70,15 @@ function DoctorPageContent() {
     try {
       if (doctorsParam) {
         const parsed = JSON.parse(decodeURIComponent(doctorsParam));
-        setDoctors(
-          Array.isArray(parsed) ? parsed : parsed.doctors || defaultDoctors
-        );
+        setDoctors(Array.isArray(parsed) ? parsed : parsed.doctors || []);
       } else {
         setDoctors(defaultDoctors);
       }
-    } catch {
+    } catch (err) {
+      console.error("Failed to parse doctor data:", err);
       setDoctors(defaultDoctors);
     }
   }, [searchParams]);
-
-  
 
   return (
     <main className="relative min-h-screen flex flex-col items-center px-6 py-10">

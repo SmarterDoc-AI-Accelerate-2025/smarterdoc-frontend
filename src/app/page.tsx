@@ -20,15 +20,16 @@ export default function Home() {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/v1/search/doctors`, {
+      const response = await fetch(`${API_URL}/api/v1/search/doctors`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          query: searchInput,
-          location: locationInput,
-          insurance: insuranceInput,
+          specialty: searchInput, // Using searchInput as specialty query
+          min_experience: 10, // You can tune these later
+          has_certification: true,
+          limit: 20,
         }),
       });
 
@@ -38,13 +39,12 @@ export default function Home() {
 
       const data = await response.json();
 
-      // Navigate to doctor page with the data
+      // Redirect to doctor page with doctor list JSON
       router.push(
         `/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`
       );
     } catch (error) {
       console.error("Error searching doctors:", error);
-      // Fallback: navigate to doctor page with empty data
       router.push("/doctor");
     } finally {
       setIsLoading(false);
@@ -128,7 +128,6 @@ export default function Home() {
         {/* Search Row 1 - Horizontal layout with labels */}
         <div className="flex items-center h-14 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
           <div className="flex items-center flex-1 min-w-[60px] border-r border-gray-300 mr-5">
-            
             <input
               type="text"
               placeholder="Search"
@@ -170,7 +169,7 @@ export default function Home() {
             onKeyPress={(e) => e.key === "Enter" && handleQuestionSearch()}
             className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
-          
+
           <button
             onClick={handleVoiceSearch}
             disabled={isLoading}
@@ -195,7 +194,6 @@ export default function Home() {
               <i className="ri-search-line text-xl"></i>
             )}
           </button>
-
         </div>
       </div>
 
