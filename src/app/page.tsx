@@ -22,27 +22,21 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/api/v1/search/doctors`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          specialty: searchInput, // Using searchInput as specialty query
-          min_experience: 10, // You can tune these later
+          specialty: searchInput,
+          min_experience: 10,
           has_certification: true,
           limit: 20,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 
-      // Redirect to doctor page with doctor list JSON
-      router.push(
-        `/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`
-      );
+      // ✅ Store in localStorage instead of query param
+      localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
+      router.push("/doctor");
     } catch (error) {
       console.error("Error searching doctors:", error);
       router.push("/doctor");
@@ -56,27 +50,18 @@ export default function Home() {
     try {
       const response = await fetch(`${API_URL}/v1/search/voice`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          voice_query: "user_voice_query", // placeholder
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ voice_query: "user_voice_query" }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 
-      // Navigate to doctor page with the data
-      router.push(
-        `/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`
-      );
+      // ✅ Save response to localStorage
+      localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
+      router.push("/doctor");
     } catch (error) {
       console.error("Error with voice search:", error);
-      // Fallback: navigate to doctor page with empty data
       router.push("/doctor");
     } finally {
       setIsLoading(false);
@@ -100,65 +85,52 @@ export default function Home() {
         className="object-cover z-0"
       />
 
-      {/* Header */}
-      <header className="flex items-center justify-start w-full max-w-5xl mb-12 z-10">
-        <Image
-          src="/logo.png"
-          alt="SmartDoc Logo"
-          width={32}
-          height={32}
-          className="mr-2"
-        />
+      <header className="flex items-center justify-start w-full max-w-5xl mb-12 z-10 cursor-pointer" onClick={() => router.push("/")}>
+        <Image src="/logo.png" alt="SmartDoc Logo" width={32} height={32} className="mr-2" />
         <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
       </header>
 
-      {/* Title */}
       <section className="text-center mb-10 z-10">
-        <h2
-          className="text-4xl font-bold text-purple-700 mb-2"
-          style={{ color: "#433C50" }}
-        >
+        <h2 className="text-4xl font-bold mb-2" style={{ color: "#433C50" }}>
           Smart guidance to the right doctor
         </h2>
         <p className="text-gray-700" style={{ color: "#5F72BE" }}>
           We connect you with the best care — clearly, fairly, and personally.
         </p>
       </section>
+
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-6 w-full max-w-4xl z-10 space-y-4">
-        {/* Search Row 1 - Horizontal layout with labels */}
         <div className="flex items-center h-14 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
-          <div className="flex items-center flex-1 min-w-[60px] border-r border-gray-300 mr-5">
-            <input
-              type="text"
-              placeholder="Search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-            />
-          </div>
-
-          <div className="flex items-center flex-1 min-w-[60px] border-r border-gray-300 mr-5">
-            <input
-              type="text"
-              placeholder="Location"
-              value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-            />
-          </div>
-
-          <div className="flex items-center flex-1 min-w-[60px]">
-            <input
-              type="text"
-              placeholder="Insurance"
-              value={insuranceInput}
-              onChange={(e) => setInsuranceInput(e.target.value)}
-              className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+          />
+          <input
+            type="text"
+            placeholder="Location"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent ml-4 border-l pl-4 border-gray-300"
+          />
+          <input
+            type="text"
+            placeholder="Insurance"
+            value={insuranceInput}
+            onChange={(e) => setInsuranceInput(e.target.value)}
+            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent ml-4 border-l pl-4 border-gray-300"
+          />
+          <button
+            onClick={handleTextSearch}
+            disabled={isLoading}
+            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          >
+            {isLoading ? <i className="ri-loader-4-line animate-spin"></i> : <i className="ri-search-line"></i>}
+          </button>
         </div>
 
-        {/* Search Row 2 - Single question input */}
         <div className="flex items-center h-14 w-full max-w-4xl rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4 z-10">
           <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
           <input
@@ -169,43 +141,18 @@ export default function Home() {
             onKeyPress={(e) => e.key === "Enter" && handleQuestionSearch()}
             className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
-
           <button
             onClick={handleVoiceSearch}
             disabled={isLoading}
             className="cursor-pointer hover:bg-gray-100 text-gray-700 p-2 rounded-full transition-colors disabled:opacity-50"
           >
-            {isLoading ? (
-              <i className="ri-loader-4-line animate-spin text-xl"></i>
-            ) : (
-              <i className="ri-mic-line text-xl"></i>
-            )}
-          </button>
-
-          <button
-            onClick={handleTextSearch}
-            disabled={isLoading}
-            className="flex items-center justify-center h-9 w-9 cursor-pointer hover:bg-gray-100 text-white p-2 rounded-full shadow-md transition-colors ml-2 disabled:opacity-50"
-            style={{ backgroundColor: "#433C50" }}
-          >
-            {isLoading ? (
-              <i className="ri-search-line animate-spin text-xl"></i>
-            ) : (
-              <i className="ri-search-line text-xl"></i>
-            )}
+            {isLoading ? <i className="ri-loader-4-line animate-spin text-xl"></i> : <i className="ri-mic-line text-xl"></i>}
           </button>
         </div>
       </div>
 
-      {/* Robot image */}
       <div className="absolute bottom-30 left-1/2 -translate-x-1/2 w-[260px] md:w-[320px] lg:w-[380px] z-10">
-        <Image
-          src="/robot.png"
-          alt="Doctor robot"
-          width={400}
-          height={400}
-          className="w-full h-auto"
-        />
+        <Image src="/robot.png" alt="Doctor robot" width={400} height={400} className="w-full h-auto" />
       </div>
     </main>
   );
