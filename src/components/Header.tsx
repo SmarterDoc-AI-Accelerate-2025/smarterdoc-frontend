@@ -78,7 +78,7 @@ export default function Header() {
         <button
           onClick={handleSearch}
           disabled={isLoading}
-          className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          className="flex items-center justify-center h-9 w-9 ml-4 bg-[#8C57FF] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
         >
           {isLoading ? (
             <i className="ri-loader-4-line animate-spin"></i>

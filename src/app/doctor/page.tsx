@@ -4,6 +4,7 @@ import Image from "next/image";
 import DoctorMap from "@/components/DoctorMap";
 import Header from "@/components/Header";
 import mockDoctorsData from "@/data/mockDoctors.json";
+import Link from "next/link";
 
 interface Rating {
   source: string;
@@ -29,32 +30,37 @@ function DoctorPageContent() {
   const [otherDoctors, setOtherDoctors] = useState<Doctor[]>([]);
 
   useEffect(() => {
-  const isLocalhost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
 
-  if (isLocalhost) {
-    console.log("Using mock data (localhost)");
-    const mockDoctors = mockDoctorsData.doctors;
-    setTopDoctors(mockDoctors.slice(0, 3));
-    setOtherDoctors(mockDoctors.slice(3));
-  } else {
-    console.log("Using localStorage data (production)");
-    const storedDoctors = localStorage.getItem("doctorResults");
-    if (storedDoctors) {
-      try {
-        const parsed = JSON.parse(storedDoctors);
-        setTopDoctors(parsed.slice(0, 3));
-        setOtherDoctors(parsed.slice(3));
-      } catch (error) {
-        console.error("Failed to parse doctorResults from localStorage:", error);
-      }
+    if (isLocalhost) {
+      console.log("Using mock data (localhost)");
+      const mockDoctors = mockDoctorsData.doctors;
+      setTopDoctors(mockDoctors.slice(0, 3));
+      setOtherDoctors(mockDoctors.slice(3));
     } else {
-      console.warn("No doctorResults found in localStorage. Showing empty list.");
+      console.log("Using localStorage data (production)");
+      const storedDoctors = localStorage.getItem("doctorResults");
+      if (storedDoctors) {
+        try {
+          const parsed = JSON.parse(storedDoctors);
+          setTopDoctors(parsed.slice(0, 3));
+          setOtherDoctors(parsed.slice(3));
+        } catch (error) {
+          console.error(
+            "Failed to parse doctorResults from localStorage:",
+            error
+          );
+        }
+      } else {
+        console.warn(
+          "No doctorResults found in localStorage. Showing empty list."
+        );
+      }
     }
-  }
-}, []);
+  }, []);
 
   const getRatingInfo = (ratings: Rating[]) => {
     if (!ratings || ratings.length === 0) return { score: "N/A", count: 0 };
@@ -87,7 +93,8 @@ function DoctorPageContent() {
             {topDoctors.map((doc) => {
               const { score, count } = getRatingInfo(doc.ratings);
               return (
-                <div
+                <Link
+                  href={`/doctor-detail?id=${doc.npi}`}
                   key={doc.npi}
                   className="cursor-pointer hover:bg-gray-100 flex items-center bg-white rounded-xl p-4 border border-gray-100 shadow-sm"
                 >
@@ -116,7 +123,7 @@ function DoctorPageContent() {
                   <label className="flex items-center text-sm text-gray-600">
                     <input type="checkbox" className="mr-2" /> AI Appointment
                   </label>
-                </div>
+                </Link>
               );
             })}
           </div>
@@ -137,7 +144,8 @@ function DoctorPageContent() {
           {otherDoctors.map((doc) => {
             const { score, count } = getRatingInfo(doc.ratings);
             return (
-              <div
+              <Link
+                href={`/doctor-detail?id=${doc.npi}`}
                 key={doc.npi}
                 className="cursor-pointer hover:bg-gray-100 flex justify-between items-center bg-white rounded-xl border border-gray-200 shadow-sm p-4"
               >
@@ -168,7 +176,7 @@ function DoctorPageContent() {
                     <input type="checkbox" className="mr-1" /> AI Appointment
                   </label>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
