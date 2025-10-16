@@ -1,10 +1,12 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import mockDoctorsData from "@/data/mockDoctors.json";
+import mockSpeciality from "@/data/mockSpeciality.json";
+import mockInsurance from "@/data/mockInsurance.json";
 
-// Type alias for SpeechRecognition constructor
+// SpeechRecognition setup
 type SpeechRecognitionConstructor =
   | typeof window.SpeechRecognition
   | typeof window.webkitSpeechRecognition;
@@ -21,13 +23,15 @@ const API_URL =
   "https://smarterdoc-backend-1094971678787.us-central1.run.app";
 
 export default function Home() {
-  const [searchInput, setSearchInput] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [locationInput, setLocationInput] = useState("");
-  const [insuranceInput, setInsuranceInput] = useState("");
+  const [insurance, setInsurance] = useState("");
   const [questionInput, setQuestionInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
+  const [insuranceList, setInsuranceList] = useState<string[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
 
@@ -36,9 +40,32 @@ export default function Home() {
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
 
+  // 🔄 Fetch dropdown data
+  useEffect(() => {
+    const loadDropdowns = async () => {
+      if (isLocalhost) {
+        setSpecialtiesList(mockSpeciality);
+        setInsuranceList(mockInsurance);
+        return;
+      }
+
+      try {
+        const [specialtiesRes, insuranceRes] = await Promise.all([
+          fetch(`${API_URL}/api/v1/search/specialties/from-bq`),
+          fetch(`${API_URL}/api/v1/search/insurance-plans`),
+        ]);
+        if (specialtiesRes.ok) setSpecialtiesList(await specialtiesRes.json());
+        if (insuranceRes.ok) setInsuranceList(await insuranceRes.json());
+      } catch (error) {
+        console.error("Error fetching dropdowns:", error);
+      }
+    };
+    loadDropdowns();
+  }, [isLocalhost]);
+
   // 🔍 Text Search
   const handleTextSearch = async () => {
-    if (!searchInput.trim()) return;
+    if (!specialty.trim()) return;
     setIsLoading(true);
 
     try {
@@ -55,7 +82,9 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          specialty: searchInput,
+          specialty,
+          insurance,
+          location: locationInput,
           min_experience: 10,
           has_certification: true,
           limit: 20,
@@ -76,6 +105,7 @@ export default function Home() {
     }
   };
 
+  // 🎤 Voice Search
   const handleVoiceSearch = async () => {
     if (
       !("webkitSpeechRecognition" in window) &&
@@ -107,7 +137,6 @@ export default function Home() {
 
       try {
         if (isLocalhost) {
-          console.log("🎤 Voice query (mock):", voiceQuery);
           localStorage.setItem(
             "doctorResults",
             JSON.stringify(mockDoctorsData.doctors)
@@ -143,15 +172,7 @@ export default function Home() {
     };
 
     recognition.onend = () => setIsRecording(false);
-
     recognition.start();
-  };
-
-  const handleQuestionSearch = () => {
-    if (questionInput.trim()) {
-      setSearchInput(questionInput);
-      handleTextSearch();
-    }
   };
 
   return (
@@ -180,7 +201,7 @@ export default function Home() {
         <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero */}
       <section className="text-center mb-10 z-10">
         <h2 className="text-4xl font-bold mb-2" style={{ color: "#433C50" }}>
           Smart guidance to the right doctor
@@ -190,31 +211,55 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Search Inputs */}
+      {/* Search */}
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-6 w-full max-w-4xl z-10 space-y-4">
-        {/* Row 1: Text search */}
         <div className="flex items-center h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4">
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-          />
+          <select
+            value={specialty}
+            onChange={(e) => setSpecialty(e.target.value)}
+            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
+            title={specialty} 
+          >
+            <option value="">Specialty</option>
+            {specialtiesList.map((item, i) => (
+              <option
+                key={i}
+                value={item}
+                title={item}
+                className="truncate max-w-[180px]"
+              >
+                {item.length > 30 ? `${item.slice(0, 30)}…` : item}
+              </option>
+            ))}
+          </select>
+
           <input
             type="text"
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent ml-4 border-l pl-4 border-gray-300"
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
           />
-          <input
-            type="text"
-            placeholder="Insurance"
-            value={insuranceInput}
-            onChange={(e) => setInsuranceInput(e.target.value)}
-            className="w-full outline-none text-gray-700 placeholder-gray-400 bg-transparent ml-4 border-l pl-4 border-gray-300"
-          />
+
+          <select
+            value={insurance}
+            onChange={(e) => setInsurance(e.target.value)}
+            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
+            title={insurance}
+          >
+            <option value="">Insurance</option>
+            {insuranceList.map((plan, i) => (
+              <option
+                key={i}
+                value={plan}
+                title={plan}
+                className="truncate max-w-[160px]"
+              >
+                {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={handleTextSearch}
             disabled={isLoading}
@@ -228,7 +273,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Row 2: Voice Search */}
+        {/* Voice Row */}
         <div className="flex items-center h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4">
           <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
           <input
@@ -236,7 +281,6 @@ export default function Home() {
             placeholder="Ask a question..."
             value={questionInput}
             onChange={(e) => setQuestionInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleQuestionSearch()}
             className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
           <button
@@ -248,10 +292,10 @@ export default function Home() {
                 : "hover:bg-gray-100"
             }`}
           >
-            {isLoading ? (
-              <i className="ri-loader-4-line animate-spin text-xl"></i>
-            ) : isRecording ? (
+            {isRecording ? (
               <i className="ri-mic-fill text-xl"></i>
+            ) : isLoading ? (
+              <i className="ri-loader-4-line animate-spin text-xl"></i>
             ) : (
               <i className="ri-mic-line text-xl"></i>
             )}
@@ -265,15 +309,8 @@ export default function Home() {
         )}
       </div>
 
-      {/* Robot Image */}
-      <div className="absolute bottom-30 left-1/2 -translate-x-1/2 w-[260px] md:w-[320px] lg:w-[380px] z-10">
-        <Image
-          src="/robot.png"
-          alt="Doctor robot"
-          width={400}
-          height={400}
-          className="w-full h-auto"
-        />
+      <div className="absolute bottom-30 left-1/2 -translate-x-1/2 w-[320px] z-10">
+        <Image src="/robot.png" alt="Doctor robot" width={400} height={400} />
       </div>
     </main>
   );

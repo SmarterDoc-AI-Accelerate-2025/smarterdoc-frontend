@@ -1,33 +1,69 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import mockSpeciality from "@/data/mockSpeciality.json";
+import mockInsurance from "@/data/mockInsurance.json";
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://smarterdoc-backend-1094971678787.us-central1.run.app";
 
 export default function Header() {
   const router = useRouter();
-  const [searchInput, setSearchInput] = useState("");
+  const [specialty, setSpecialty] = useState("");
   const [locationInput, setLocationInput] = useState("");
-  const [insuranceInput, setInsuranceInput] = useState("");
+  const [insurance, setInsurance] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
+  const [insuranceList, setInsuranceList] = useState<string[]>([]);
+
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  useEffect(() => {
+    const loadDropdowns = async () => {
+      if (isLocalhost) {
+        setSpecialtiesList(mockSpeciality);
+        setInsuranceList(mockInsurance);
+        return;
+      }
+
+      try {
+        const [specialtiesRes, insuranceRes] = await Promise.all([
+          fetch(`${API_URL}/api/v1/search/specialties/from-bq`),
+          fetch(`${API_URL}/api/v1/search/insurance-plans`),
+        ]);
+        if (specialtiesRes.ok) setSpecialtiesList(await specialtiesRes.json());
+        if (insuranceRes.ok) setInsuranceList(await insuranceRes.json());
+      } catch (error) {
+        console.error("Error fetching dropdowns:", error);
+      }
+    };
+    loadDropdowns();
+  }, [isLocalhost]);
 
   const handleSearch = async () => {
-    if (!searchInput.trim()) return;
+    if (!specialty.trim()) return;
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "https://smarterdoc-backend-1094971678787.us-central1.run.app/v1/search/doctors",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: searchInput,
-            location: locationInput,
-            insurance: insuranceInput,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/v1/search/doctors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          specialty,
+          insurance,
+          location: locationInput,
+          min_experience: 10,
+          has_certification: true,
+          limit: 20,
+        }),
+      });
       const data = await response.json();
-      router.push(`/doctor?doctors=${encodeURIComponent(JSON.stringify(data.doctors))}`);
+      localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
+      router.push("/doctor");
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -37,14 +73,13 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between w-full max-w-6xl mb-8 z-10">
-      {/* Logo */}
       <div
         className="flex items-center cursor-pointer select-none"
         onClick={() => router.push("/")}
       >
         <Image
           src="/logo.png"
-          alt="SmartDoc Logo"
+          alt="Logo"
           width={32}
           height={32}
           className="mr-2"
@@ -52,15 +87,26 @@ export default function Header() {
         <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
       </div>
 
-      {/* Search Bar */}
       <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
-        <input
-          type="text"
-          placeholder="Search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400"
-        />
+        <select
+          value={specialty}
+          onChange={(e) => setSpecialty(e.target.value)}
+          className="flex-1 max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
+          title={specialty}
+        >
+          <option value="">Specialty</option>
+          {specialtiesList.map((item, i) => (
+            <option
+              key={i}
+              value={item}
+              title={item}
+              className="truncate max-w-[180px]"
+            >
+              {item.length > 30 ? `${item.slice(0, 30)}…` : item}
+            </option>
+          ))}
+        </select>
+
         <input
           type="text"
           placeholder="Location"
@@ -68,13 +114,26 @@ export default function Header() {
           onChange={(e) => setLocationInput(e.target.value)}
           className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
         />
-        <input
-          type="text"
-          placeholder="Insurance"
-          value={insuranceInput}
-          onChange={(e) => setInsuranceInput(e.target.value)}
-          className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
-        />
+
+        <select
+          value={insurance}
+          onChange={(e) => setInsurance(e.target.value)}
+          className="flex-1 max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
+          title={insurance}
+        >
+          <option value="">Insurance</option>
+          {insuranceList.map((plan, i) => (
+            <option
+              key={i}
+              value={plan}
+              title={plan}
+              className="truncate max-w-[160px]"
+            >
+              {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
+            </option>
+          ))}
+        </select>
+
         <button
           onClick={handleSearch}
           disabled={isLoading}
