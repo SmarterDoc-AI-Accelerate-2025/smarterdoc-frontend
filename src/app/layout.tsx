@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import Script from "next/script";
 
 // Load Inter variable fonts from /public
 const inter = localFont({
@@ -31,7 +32,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} font-sans`}>
-      <body className="antialiased bg-white">{children}</body>
+      <body className="antialiased bg-white">{children}
+      {/* WUUNU SNIPPET - DON'T CHANGE THIS (START) */}
+      {process.env.NODE_ENV !== "production" && (
+        <>
+          <Script id="wuunu-ws" strategy="afterInteractive">
+            { `window.__WUUNU_WS__ = "http://127.0.0.1:63624/";` }
+          </Script>
+          <Script
+            id="wuunu-widget"
+            src="https://cdn.jsdelivr.net/npm/@wuunu/widget@0.1?cacheParam=699"
+            strategy="afterInteractive"
+            crossOrigin="anonymous"
+          />
+        </>
+      )}
+      {/* WUUNU SNIPPET - DON'T CHANGE THIS (END) */}
+</body>
     </html>
   );
 }
