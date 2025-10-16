@@ -35,10 +35,27 @@ export default function Home() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
 
+  // WebSocket and audio processing refs
+  const websocketRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+
   const isLocalhost =
     typeof window !== "undefined" &&
     (window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1");
+
+  // Convert Float32Array to Int16Array (LINEAR16 PCM)
+  const float32ToInt16 = (buffer: Float32Array): Int16Array => {
+    const int16 = new Int16Array(buffer.length);
+    for (let i = 0; i < buffer.length; i++) {
+      const s = Math.max(-1, Math.min(1, buffer[i]));
+      int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+    return int16;
+  };
 
   // 🔄 Fetch dropdown data
   useEffect(() => {
@@ -62,6 +79,15 @@ export default function Home() {
     };
     loadDropdowns();
   }, [isLocalhost]);
+
+  // Cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      if (isRecording) {
+        stopVoiceRecording();
+      }
+    };
+  }, []);
 
   // 🔍 Text Search
   const handleTextSearch = async () => {
@@ -105,78 +131,170 @@ export default function Home() {
     }
   };
 
-  // 🎤 Voice Search
+
+  // 🎤 Voice Search with WebSocket
   const handleVoiceSearch = async () => {
-    if (
-      !("webkitSpeechRecognition" in window) &&
-      !("SpeechRecognition" in window)
-    ) {
-      alert("Your browser does not support speech recognition.");
+    if (isRecording) {
+      // Stop recording
+      stopVoiceRecording();
       return;
     }
 
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
+    try {
+      // Get microphone stream
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
 
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.continuous = false;
+      // Connect WebSocket (cloud-safe)
+      const wsBase = (process.env.NEXT_PUBLIC_WS_URL as string | undefined) || (() => {
+        try {
+          const api = new URL(API_URL);
+          const proto = api.protocol === 'https:' ? 'wss:' : 'ws:';
+          return `${proto}//${api.host}`;
+        } catch {
+          const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const host = isLocalhost ? 'localhost:8080' : window.location.host;
+          return `${proto}//${host}`;
+        }
+      })();
+      const wsUrl = `${wsBase}/api/v1/speech/stream/websocket?language_code=en-US&sample_rate=16000`;
+      console.log('Connecting to WebSocket:', wsUrl);
+      
+      const websocket = new WebSocket(wsUrl);
+      websocketRef.current = websocket;
 
-    recognition.onstart = () => {
-      setIsRecording(true);
-      setTranscript("");
-    };
+      websocket.onopen = async () => {
+        console.log('WebSocket connected');
+        setIsRecording(true);
+        setTranscript("");
+        
+        // Setup audio processing
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+          sampleRate: 16000
+        });
+        audioContextRef.current = audioContext;
+        
+        const streamSource = audioContext.createMediaStreamSource(stream);
+        streamSourceRef.current = streamSource;
+        
+        const processor = audioContext.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+        
+        let audioChunkCount = 0;
+        processor.onaudioprocess = (e) => {
+          if (websocket && websocket.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const int16Data = float32ToInt16(inputData);
+            
+            try {
+              websocket.send(int16Data.buffer);
+              audioChunkCount++;
+              
+              if (audioChunkCount === 1) {
+                console.log(`✓ Sent first audio chunk (${int16Data.length * 2} bytes)`);
+              }
+            } catch (error) {
+              console.error('Error sending audio data:', error);
+            }
+          }
+        };
 
-    recognition.onresult = async (event: SpeechRecognitionEvent) => {
-      const voiceQuery = event.results[0][0].transcript;
-      setTranscript(voiceQuery);
-      setIsRecording(false);
-      setIsLoading(true);
+        streamSource.connect(processor);
+        processor.connect(audioContext.destination);
+        
+        // Resume audio context if suspended
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+        
+        mediaRecorderRef.current = stream;
+        console.log('Audio setup complete');
+      };
 
-      try {
-        if (isLocalhost) {
-          localStorage.setItem(
-            "doctorResults",
-            JSON.stringify(mockDoctorsData.doctors)
-          );
-          router.push("/doctor");
+      websocket.onmessage = (event) => {
+        const result = JSON.parse(event.data);
+        console.log('Received result:', result);
+
+        if (result.error) {
+          console.error('Error in result:', result.error);
+          setTranscript(`Error: ${result.error}`);
           return;
         }
 
-        const response = await fetch(`${API_URL}/api/v1/search/voice`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ voice_query: voiceQuery }),
-        });
+        if (result.transcript && result.transcript.trim()) {
+          if (result.is_final) {
+            console.log('Final transcript:', result.transcript);
+            setTranscript(result.transcript);
+            setQuestionInput(result.transcript);
+          }
+        }
+      };
 
-        if (!response.ok)
-          throw new Error(`Voice search failed: ${response.status}`);
-        const data = await response.json();
+      websocket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        console.error('WebSocket URL was:', wsUrl);
+        console.error('WebSocket readyState:', websocket.readyState);
+        setTranscript(`Connection error: ${wsUrl}`);
+        stopVoiceRecording();
+      };
 
-        localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
-        router.push("/doctor");
-      } catch (error) {
-        console.error("Voice search error:", error);
-        router.push("/doctor");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      websocket.onclose = () => {
+        console.log('WebSocket closed');
+        if (isRecording) {
+          stopVoiceRecording();
+        }
+      };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", event.error);
-      setIsRecording(false);
-      setIsLoading(false);
-    };
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setTranscript(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
-    recognition.onend = () => setIsRecording(false);
-    recognition.start();
+  // Stop voice recording
+  const stopVoiceRecording = () => {
+    setIsRecording(false);
+
+    // Close WebSocket
+    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
+      websocketRef.current.send('close');
+      websocketRef.current.close();
+    }
+    websocketRef.current = null;
+
+    // Stop audio processing
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (streamSourceRef.current) {
+      streamSourceRef.current.disconnect();
+      streamSourceRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    // Stop microphone
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current = null;
+    }
+
+    console.log('Recording stopped');
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-16">
+    <main className="min-h-screen flex flex-col items-center px-4 py-16 relative">
       {/* Background */}
       <Image
         src="/homebg.png"
@@ -285,12 +403,13 @@ export default function Home() {
           />
           <button
             onClick={handleVoiceSearch}
-            disabled={isLoading || isRecording}
-            className={`cursor-pointer text-gray-700 p-2 rounded-full transition ${
+            disabled={isLoading}
+            className={`cursor-pointer p-2 rounded-full transition ${
               isRecording
                 ? "bg-red-100 text-red-600 animate-pulse"
-                : "hover:bg-gray-100"
+                : "text-gray-700 hover:bg-gray-100"
             }`}
+            title={isRecording ? "Click to stop recording" : "Click to start recording"}
           >
             {isRecording ? (
               <i className="ri-mic-fill text-xl"></i>
