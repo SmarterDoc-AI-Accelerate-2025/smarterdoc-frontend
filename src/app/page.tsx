@@ -15,6 +15,7 @@ declare global {
   interface Window {
     SpeechRecognition: SpeechRecognitionConstructor;
     webkitSpeechRecognition: SpeechRecognitionConstructor;
+    webkitAudioContext: typeof AudioContext;
   }
 }
 
@@ -174,8 +175,9 @@ export default function Home() {
         setIsRecording(true);
         setTranscript("");
         
-        // Setup audio processing
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        // Setup audio processing (avoid any by typing webkitAudioContext)
+        const AudioCtx: typeof AudioContext = (window.AudioContext || window.webkitAudioContext);
+        const audioContext = new AudioCtx({
           sampleRate: 16000
         });
         audioContextRef.current = audioContext;
