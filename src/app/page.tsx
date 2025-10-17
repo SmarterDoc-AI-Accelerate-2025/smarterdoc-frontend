@@ -33,7 +33,6 @@ export default function Home() {
   const [transcript, setTranscript] = useState("");
   const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
   const [insuranceList, setInsuranceList] = useState<string[]>([]);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const router = useRouter();
 
   // WebSocket and audio processing refs
@@ -53,7 +52,7 @@ export default function Home() {
     const int16 = new Int16Array(buffer.length);
     for (let i = 0; i < buffer.length; i++) {
       const s = Math.max(-1, Math.min(1, buffer[i]));
-      int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
     }
     return int16;
   };
@@ -88,9 +87,9 @@ export default function Home() {
         stopVoiceRecording();
       }
     };
-  }, []);
+  }, [isRecording]);
 
-  // 🔍 Text Search
+  // Text Search
   const handleTextSearch = async () => {
     if (!specialty.trim()) return;
     setIsLoading(true);
@@ -132,8 +131,7 @@ export default function Home() {
     }
   };
 
-
-  // 🎤 Voice Search with WebSocket
+  // Voice Search with WebSocket
   const handleVoiceSearch = async () => {
     if (isRecording) {
       // Stop recording
@@ -148,90 +146,96 @@ export default function Home() {
           channelCount: 1,
           sampleRate: 16000,
           echoCancellation: true,
-          noiseSuppression: true
-        }
+          noiseSuppression: true,
+        },
       });
 
       // Connect WebSocket (cloud-safe)
-      const wsBase = (process.env.NEXT_PUBLIC_WS_URL as string | undefined) || (() => {
-        try {
-          const api = new URL(API_URL);
-          const proto = api.protocol === 'https:' ? 'wss:' : 'ws:';
-          return `${proto}//${api.host}`;
-        } catch {
-          const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const host = isLocalhost ? 'localhost:8080' : window.location.host;
-          return `${proto}//${host}`;
-        }
-      })();
+      const wsBase =
+        (process.env.NEXT_PUBLIC_WS_URL as string | undefined) ||
+        (() => {
+          try {
+            const api = new URL(API_URL);
+            const proto = api.protocol === "https:" ? "wss:" : "ws:";
+            return `${proto}//${api.host}`;
+          } catch {
+            const proto =
+              window.location.protocol === "https:" ? "wss:" : "ws:";
+            const host = isLocalhost ? "localhost:8080" : window.location.host;
+            return `${proto}//${host}`;
+          }
+        })();
       const wsUrl = `${wsBase}/api/v1/speech/stream/websocket?language_code=en-US&sample_rate=16000`;
-      console.log('Connecting to WebSocket:', wsUrl);
-      
+      console.log("Connecting to WebSocket:", wsUrl);
+
       const websocket = new WebSocket(wsUrl);
       websocketRef.current = websocket;
 
       websocket.onopen = async () => {
-        console.log('WebSocket connected');
+        console.log("WebSocket connected");
         setIsRecording(true);
         setTranscript("");
-        
+
         // Setup audio processing (avoid any by typing webkitAudioContext)
-        const AudioCtx: typeof AudioContext = (window.AudioContext || window.webkitAudioContext);
+        const AudioCtx: typeof AudioContext =
+          window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioCtx({
-          sampleRate: 16000
+          sampleRate: 16000,
         });
         audioContextRef.current = audioContext;
-        
+
         const streamSource = audioContext.createMediaStreamSource(stream);
         streamSourceRef.current = streamSource;
-        
+
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
-        
+
         let audioChunkCount = 0;
         processor.onaudioprocess = (e) => {
           if (websocket && websocket.readyState === WebSocket.OPEN) {
             const inputData = e.inputBuffer.getChannelData(0);
             const int16Data = float32ToInt16(inputData);
-            
+
             try {
               websocket.send(int16Data.buffer);
               audioChunkCount++;
-              
+
               if (audioChunkCount === 1) {
-                console.log(`✓ Sent first audio chunk (${int16Data.length * 2} bytes)`);
+                console.log(
+                  `✓ Sent first audio chunk (${int16Data.length * 2} bytes)`
+                );
               }
             } catch (error) {
-              console.error('Error sending audio data:', error);
+              console.error("Error sending audio data:", error);
             }
           }
         };
 
         streamSource.connect(processor);
         processor.connect(audioContext.destination);
-        
+
         // Resume audio context if suspended
-        if (audioContext.state === 'suspended') {
+        if (audioContext.state === "suspended") {
           await audioContext.resume();
         }
-        
+
         mediaRecorderRef.current = stream;
-        console.log('Audio setup complete');
+        console.log("Audio setup complete");
       };
 
       websocket.onmessage = (event) => {
         const result = JSON.parse(event.data);
-        console.log('Received result:', result);
+        console.log("Received result:", result);
 
         if (result.error) {
-          console.error('Error in result:', result.error);
+          console.error("Error in result:", result.error);
           setTranscript(`Error: ${result.error}`);
           return;
         }
 
         if (result.transcript && result.transcript.trim()) {
           if (result.is_final) {
-            console.log('Final transcript:', result.transcript);
+            console.log("Final transcript:", result.transcript);
             setTranscript(result.transcript);
             setQuestionInput(result.transcript);
           }
@@ -239,23 +243,24 @@ export default function Home() {
       };
 
       websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        console.error('WebSocket URL was:', wsUrl);
-        console.error('WebSocket readyState:', websocket.readyState);
+        console.error("WebSocket error:", error);
+        console.error("WebSocket URL was:", wsUrl);
+        console.error("WebSocket readyState:", websocket.readyState);
         setTranscript(`Connection error: ${wsUrl}`);
         stopVoiceRecording();
       };
 
       websocket.onclose = () => {
-        console.log('WebSocket closed');
+        console.log("WebSocket closed");
         if (isRecording) {
           stopVoiceRecording();
         }
       };
-
     } catch (error) {
-      console.error('Error starting recording:', error);
-      setTranscript(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error("Error starting recording:", error);
+      setTranscript(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     }
   };
 
@@ -264,8 +269,11 @@ export default function Home() {
     setIsRecording(false);
 
     // Close WebSocket
-    if (websocketRef.current && websocketRef.current.readyState === WebSocket.OPEN) {
-      websocketRef.current.send('close');
+    if (
+      websocketRef.current &&
+      websocketRef.current.readyState === WebSocket.OPEN
+    ) {
+      websocketRef.current.send("close");
       websocketRef.current.close();
     }
     websocketRef.current = null;
@@ -288,11 +296,11 @@ export default function Home() {
 
     // Stop microphone
     if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.getTracks().forEach(track => track.stop());
+      mediaRecorderRef.current.getTracks().forEach((track) => track.stop());
       mediaRecorderRef.current = null;
     }
 
-    console.log('Recording stopped');
+    console.log("Recording stopped");
   };
 
   return (
@@ -338,7 +346,7 @@ export default function Home() {
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
             className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
-            title={specialty} 
+            title={specialty}
           >
             <option value="">Specialty</option>
             {specialtiesList.map((item, i) => (
@@ -379,18 +387,6 @@ export default function Home() {
               </option>
             ))}
           </select>
-
-          <button
-            onClick={handleTextSearch}
-            disabled={isLoading}
-            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
-          >
-            {isLoading ? (
-              <i className="ri-loader-4-line animate-spin"></i>
-            ) : (
-              <i className="ri-search-line"></i>
-            )}
-          </button>
         </div>
 
         {/* Voice Row */}
@@ -403,6 +399,7 @@ export default function Home() {
             onChange={(e) => setQuestionInput(e.target.value)}
             className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
           />
+
           <button
             onClick={handleVoiceSearch}
             disabled={isLoading}
@@ -411,7 +408,11 @@ export default function Home() {
                 ? "bg-red-100 text-red-600 animate-pulse"
                 : "text-gray-700 hover:bg-gray-100"
             }`}
-            title={isRecording ? "Click to stop recording" : "Click to start recording"}
+            title={
+              isRecording
+                ? "Click to stop recording"
+                : "Click to start recording"
+            }
           >
             {isRecording ? (
               <i className="ri-mic-fill text-xl"></i>
@@ -419,6 +420,18 @@ export default function Home() {
               <i className="ri-loader-4-line animate-spin text-xl"></i>
             ) : (
               <i className="ri-mic-line text-xl"></i>
+            )}
+          </button>
+
+          <button
+            onClick={handleTextSearch}
+            disabled={isLoading}
+            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          >
+            {isLoading ? (
+              <i className="ri-loader-4-line animate-spin"></i>
+            ) : (
+              <i className="ri-search-line"></i>
             )}
           </button>
         </div>
