@@ -31,6 +31,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [finalTranscript, setFinalTranscript] = useState("");
+  const [interimTranscript, setInterimTranscript] = useState("");
+  const finalRef = useRef<string>("");
   const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
   const [insuranceList, setInsuranceList] = useState<string[]>([]);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -69,7 +72,7 @@ export default function Home() {
 
       try {
         const [specialtiesRes, insuranceRes] = await Promise.all([
-          fetch(`${API_URL}/api/v1/search/specialties/from-bq`),
+          fetch(`${API_URL}/api/v1/search/specialties`),
           fetch(`${API_URL}/api/v1/search/insurance-plans`),
         ]);
         if (specialtiesRes.ok) setSpecialtiesList(await specialtiesRes.json());
@@ -174,6 +177,9 @@ export default function Home() {
         console.log('WebSocket connected');
         setIsRecording(true);
         setTranscript("");
+        setFinalTranscript("");
+        setInterimTranscript("");
+        finalRef.current = "";
         
         // Setup audio processing (avoid any by typing webkitAudioContext)
         const AudioCtx: typeof AudioContext = (window.AudioContext || window.webkitAudioContext);
@@ -220,7 +226,13 @@ export default function Home() {
       };
 
       websocket.onmessage = (event) => {
-        const result = JSON.parse(event.data);
+        type SttResult = {
+          transcript?: string;
+          is_final?: boolean;
+          confidence?: number;
+          error?: string;
+        };
+        const result = JSON.parse(event.data) as SttResult;
         console.log('Received result:', result);
 
         if (result.error) {
@@ -230,10 +242,22 @@ export default function Home() {
         }
 
         if (result.transcript && result.transcript.trim()) {
+          const chunk = result.transcript.trim();
           if (result.is_final) {
-            console.log('Final transcript:', result.transcript);
-            setTranscript(result.transcript);
-            setQuestionInput(result.transcript);
+            // Append final chunk to accumulated transcript
+            setFinalTranscript((prev) => {
+              const updated = prev ? `${prev} ${chunk}` : chunk;
+              finalRef.current = updated;
+              setTranscript(updated);
+              setQuestionInput(updated);
+              return updated;
+            });
+            setInterimTranscript("");
+          } else {
+            // Show interim combined with accumulated final transcript
+            setInterimTranscript(chunk);
+            const combined = finalRef.current ? `${finalRef.current} ${chunk}` : chunk;
+            setTranscript(combined);
           }
         }
       };
