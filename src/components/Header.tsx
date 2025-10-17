@@ -17,6 +17,7 @@ export default function Header() {
   const [isLoading, setIsLoading] = useState(false);
   const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
   const [insuranceList, setInsuranceList] = useState<string[]>([]);
+  const [hasSelectedDoctors, setHasSelectedDoctors] = useState(false);
 
   const isLocalhost =
     typeof window !== "undefined" &&
@@ -42,8 +43,22 @@ export default function Header() {
         console.error("Error fetching dropdowns:", error);
       }
     };
+
     loadDropdowns();
   }, [isLocalhost]);
+
+  useEffect(() => {
+    const updateSelectedStatus = () => {
+      const stored = JSON.parse(
+        localStorage.getItem("selectedDoctors") || "[]"
+      );
+      setHasSelectedDoctors(stored.length > 0);
+    };
+
+    updateSelectedStatus();
+    window.addEventListener("storage", updateSelectedStatus);
+    return () => window.removeEventListener("storage", updateSelectedStatus);
+  }, []);
 
   const handleSearch = async () => {
     if (!specialty.trim()) return;
@@ -73,6 +88,7 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between w-full max-w-6xl mb-8 z-10">
+      {/* Logo */}
       <div
         className="flex items-center cursor-pointer select-none"
         onClick={() => router.push("/")}
@@ -80,70 +96,76 @@ export default function Header() {
         <Image
           src="/logo.png"
           alt="Logo"
-          width={32}
-          height={32}
+          width={28}
+          height={28}
           className="mr-2"
         />
         <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
       </div>
 
-      <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
-        <select
-          value={specialty}
-          onChange={(e) => setSpecialty(e.target.value)}
-          className="flex-1 max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
-          title={specialty}
-        >
-          <option value="">Specialty</option>
-          {specialtiesList.map((item, i) => (
-            <option
-              key={i}
-              value={item}
-              title={item}
-              className="truncate max-w-[180px]"
+      {/* Search Section */}
+      <div className="flex items-center">
+        <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
+          <select
+            value={specialty}
+            onChange={(e) => setSpecialty(e.target.value)}
+            className="flex-1 max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
+            title={specialty}
+          >
+            <option value="">Specialty</option>
+            {specialtiesList.map((item, i) => (
+              <option key={i} value={item} title={item}>
+                {item.length > 30 ? `${item.slice(0, 30)}…` : item}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            placeholder="Location"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
+          />
+
+          <select
+            value={insurance}
+            onChange={(e) => setInsurance(e.target.value)}
+            className="flex-1 max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
+            title={insurance}
+          >
+            <option value="">Insurance</option>
+            {insuranceList.map((plan, i) => (
+              <option key={i} value={plan} title={plan}>
+                {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex items-center space-x-2 ml-4">
+            <button
+              onClick={handleSearch}
+              disabled={isLoading}
+              className="flex items-center justify-center h-9 w-9 bg-[#8C57FF] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
             >
-              {item.length > 30 ? `${item.slice(0, 30)}…` : item}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="text"
-          placeholder="Location"
-          value={locationInput}
-          onChange={(e) => setLocationInput(e.target.value)}
-          className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
-        />
-
-        <select
-          value={insurance}
-          onChange={(e) => setInsurance(e.target.value)}
-          className="flex-1 max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
-          title={insurance}
-        >
-          <option value="">Insurance</option>
-          {insuranceList.map((plan, i) => (
-            <option
-              key={i}
-              value={plan}
-              title={plan}
-              className="truncate max-w-[160px]"
-            >
-              {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
-            </option>
-          ))}
-        </select>
-
+              {isLoading ? (
+                <i className="ri-loader-4-line animate-spin"></i>
+              ) : (
+                <i className="ri-search-line"></i>
+              )}
+            </button>
+          </div>
+        </div>
         <button
-          onClick={handleSearch}
-          disabled={isLoading}
-          className="flex items-center justify-center h-9 w-9 ml-4 bg-[#8C57FF] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+          onClick={() => hasSelectedDoctors && router.push("/appointment")}
+          disabled={!hasSelectedDoctors}
+          className={`flex items-center justify-center h-12 w-12 transition ${
+            hasSelectedDoctors
+              ? "text-[#433C50] cursor-pointer"
+              : "text-[#433C50] cursor-not-allowed opacity-50"
+          }`}
         >
-          {isLoading ? (
-            <i className="ri-loader-4-line animate-spin"></i>
-          ) : (
-            <i className="ri-search-line"></i>
-          )}
+          <i className="ri-health-book-line text-3xl"></i>
         </button>
       </div>
     </header>
