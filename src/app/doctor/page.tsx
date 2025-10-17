@@ -120,8 +120,29 @@ function DoctorPageContent() {
                     </div>
                     <p className="text-sm text-gray-600">{doc.address}</p>
                   </div>
-                  <label className="flex items-center text-sm text-gray-600">
-                    <input type="checkbox" className="mr-2" /> AI Appointment
+                  <label
+                    className="flex items-center text-sm text-gray-600"
+                    onClick={(e) => e.stopPropagation()} 
+                    onMouseDown={(e) => e.stopPropagation()} 
+                  >
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      onClick={(e) => e.stopPropagation()} 
+                      onChange={(e) => {
+                        const stored = JSON.parse(
+                          localStorage.getItem("selectedDoctors") || "[]"
+                        );
+                        const updated = e.target.checked
+                          ? [...new Set([...stored, doc.npi])]
+                          : stored.filter((id: string) => id !== doc.npi);
+                        localStorage.setItem(
+                          "selectedDoctors",
+                          JSON.stringify(updated)
+                        );
+                      }}
+                    />
+                    AI Appointment
                   </label>
                 </Link>
               );
