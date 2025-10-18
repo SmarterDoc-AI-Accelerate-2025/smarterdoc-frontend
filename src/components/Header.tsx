@@ -54,7 +54,6 @@ export default function Header() {
       );
       setHasSelectedDoctors(stored.length > 0);
     };
-
     updateSelectedStatus();
     window.addEventListener("storage", updateSelectedStatus);
     return () => window.removeEventListener("storage", updateSelectedStatus);
