@@ -9,6 +9,20 @@ import Header from "@/components/Header";
 export default function AppointmentPage() {
   const router = useRouter();
   const [doctors, setDoctors] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedTime, setSelectedTime] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    birth: "",
+    email: "",
+    phone: "",
+    gender: "",
+    comment: "",
+  });
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("selectedDoctors") || "[]");
@@ -22,19 +36,6 @@ export default function AppointmentPage() {
     window.dispatchEvent(new Event("storage"));
   };
 
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  const [selectedTime, setSelectedTime] = useState("");
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    birth: "",
-    email: "",
-    phone: "",
-    gender: "",
-    comment: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-
   const handleAppointment = async () => {
     if (!selectedDate || !selectedTime) {
       alert("Please select an available date and time.");
@@ -47,28 +48,43 @@ export default function AppointmentPage() {
       ...formData,
     };
 
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
     try {
       setIsLoading(true);
-      const response = await fetch(
-        "https://smarterdoc-backend-1094971678787.us-central1.run.app/v1/appointments",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-      if (!response.ok) throw new Error("Failed to create appointment");
-      alert("Appointment successfully booked!");
-      router.push("/doctor");
+      console.log(payload);
+
+      if (isLocalhost) {
+        // Localhost — skip API, show popup directly
+        setShowPopup(true);
+      } else {
+        // Production — call API
+        const response = await fetch(
+          "https://smarterdoc-backend-1094971678787.us-central1.run.app/api/v1/book/appointments",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (!response.ok) throw new Error("Failed to create appointment");
+
+        setShowPopup(true);
+      }
     } catch (err) {
-      console.error(err);
-      alert("Failed to book appointment. Please try again.");
+      console.error("Appointment booking failed:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleCancel = () => router.push("/doctor");
+
+  const closePopup = () => setShowPopup(false);
 
   const timeSlots = [
     "17:30",
@@ -84,7 +100,6 @@ export default function AppointmentPage() {
     <main className="relative min-h-screen flex flex-col items-center px-6 py-10">
       <Header />
 
-      {/* Title */}
       <h2 className="text-2xl font-bold text-gray-800 mb-6 z-10">
         Your Appointment
       </h2>
@@ -93,7 +108,10 @@ export default function AppointmentPage() {
       <section className="w-full max-w-6xl z-10 mb-10 space-y-4">
         <h3 className="font-semibold text-gray-700 mb-2">Doctors</h3>
         {doctors.map((doc) => (
-          <div key={doc.npi} className="flex justify-between ...">
+          <div
+            key={doc.npi}
+            className="flex justify-between items-center bg-white rounded-xl shadow-md p-4 border border-gray-100"
+          >
             <div className="flex items-center">
               <Image
                 src={doc.img}
@@ -199,7 +217,7 @@ export default function AppointmentPage() {
 
         <div className="flex items-center mb-4 space-x-4">
           <label className="font-medium text-gray-700">Gender:</label>
-          {["Male", "Female"].map((g) => (
+          {["Male", "Female", "Others"].map((g) => (
             <label key={g} className="flex items-center space-x-1">
               <input
                 type="radio"
@@ -212,17 +230,6 @@ export default function AppointmentPage() {
               <span>{g}</span>
             </label>
           ))}
-          <label className="flex items-center space-x-1">
-            <input
-              type="radio"
-              name="gender"
-              value="Others"
-              onChange={(e) =>
-                setFormData({ ...formData, gender: e.target.value })
-              }
-            />
-            <span>Others</span>
-          </label>
         </div>
 
         <textarea
@@ -241,7 +248,7 @@ export default function AppointmentPage() {
           disabled={isLoading}
           className="cursor-pointer px-6 py-2 bg-[#5F72BE] text-white rounded-md hover:bg-[#433C50] transition disabled:opacity-50"
         >
-          Appointment
+          {isLoading ? "Submitting..." : "Appointment"}
         </button>
         <button
           onClick={handleCancel}
@@ -250,6 +257,39 @@ export default function AppointmentPage() {
           Cancel
         </button>
       </div>
+
+      {/* Success Popup */}
+      {showPopup && (
+        <div
+          className="fixed inset-0 bg-[rgba(0,0,0,0.5)] flex justify-center items-center z-50"
+          onClick={closePopup}
+        >
+          <div
+            className="bg-white rounded-xl p-8 shadow-lg text-center relative w-[356px] h-[260px] flex flex-col justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              onClick={closePopup}
+            >
+              <i className="ri-close-line text-xl"></i>
+            </button>
+
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">
+              Appointment submitted!
+            </h3>
+            <p className="text-gray-600 mb-1">
+              Our system is matching your details with top specialists.
+            </p>
+            <p className="text-gray-600">
+              You&apos;ll get an update via email soon!
+            </p>
+            <div className="mt-6 flex justify-center">
+              <i className="ri-check-double-line text-4xl text-[#8C57FF]"></i>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
