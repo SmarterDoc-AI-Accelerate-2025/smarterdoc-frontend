@@ -31,8 +31,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [finalTranscript, setFinalTranscript] = useState("");
-  const [interimTranscript, setInterimTranscript] = useState("");
+  const [, setFinalTranscript] = useState("");
+  const [, setInterimTranscript] = useState("");
   const finalRef = useRef<string>("");
   const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
   const [insuranceList, setInsuranceList] = useState<string[]>([]);
@@ -60,7 +60,7 @@ export default function Home() {
     return int16;
   };
 
-  // 🔄 Fetch dropdown data
+  // Fetch dropdown data
   useEffect(() => {
     const loadDropdowns = async () => {
       if (isLocalhost) {
@@ -82,6 +82,11 @@ export default function Home() {
     };
     loadDropdowns();
   }, [isLocalhost]);
+
+  useEffect(() => {
+    localStorage.removeItem("selectedDoctors");
+    window.dispatchEvent(new Event("storage")); // notify Header
+  }, []);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -181,7 +186,7 @@ export default function Home() {
         setFinalTranscript("");
         setInterimTranscript("");
         finalRef.current = "";
-        
+
         // Setup audio processing (avoid any by typing webkitAudioContext)
         const AudioCtx: typeof AudioContext =
           window.AudioContext || window.webkitAudioContext;
@@ -237,7 +242,7 @@ export default function Home() {
           error?: string;
         };
         const result = JSON.parse(event.data) as SttResult;
-        console.log('Received result:', result);
+        console.log("Received result:", result);
 
         if (result.error) {
           console.error("Error in result:", result.error);
@@ -260,7 +265,9 @@ export default function Home() {
           } else {
             // Show interim combined with accumulated final transcript
             setInterimTranscript(chunk);
-            const combined = finalRef.current ? `${finalRef.current} ${chunk}` : chunk;
+            const combined = finalRef.current
+              ? `${finalRef.current} ${chunk}`
+              : chunk;
             setTranscript(combined);
           }
         }

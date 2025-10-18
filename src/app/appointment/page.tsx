@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import DatePicker from "react-datepicker";
@@ -7,34 +8,19 @@ import Header from "@/components/Header";
 
 export default function AppointmentPage() {
   const router = useRouter();
+  const [doctors, setDoctors] = useState<any[]>([]);
 
-  // Fake doctor list (could come from query or backend)
-  const [doctors, setDoctors] = useState([
-    {
-      id: 1,
-      name: "Dr. Mark",
-      rating: 4.9,
-      reviews: 120,
-      specialty: "Family Medicine",
-      img: "/doctor.png",
-    },
-    {
-      id: 2,
-      name: "Dr. Mark",
-      rating: 4.9,
-      reviews: 120,
-      specialty: "Family Medicine",
-      img: "/doctor.png",
-    },
-    {
-      id: 3,
-      name: "Dr. Mark",
-      rating: 4.9,
-      reviews: 120,
-      specialty: "Family Medicine",
-      img: "/doctor.png",
-    },
-  ]);
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("selectedDoctors") || "[]");
+    setDoctors(stored);
+  }, []);
+
+  const handleDeleteDoctor = (npi: string) => {
+    const updated = doctors.filter((d) => d.npi !== npi);
+    setDoctors(updated);
+    localStorage.setItem("selectedDoctors", JSON.stringify(updated));
+    window.dispatchEvent(new Event("storage"));
+  };
 
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedTime, setSelectedTime] = useState("");
@@ -48,10 +34,6 @@ export default function AppointmentPage() {
     comment: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleDeleteDoctor = (id: number) => {
-    setDoctors(doctors.filter((d) => d.id !== id));
-  };
 
   const handleAppointment = async () => {
     if (!selectedDate || !selectedTime) {
@@ -111,10 +93,7 @@ export default function AppointmentPage() {
       <section className="w-full max-w-6xl z-10 mb-10 space-y-4">
         <h3 className="font-semibold text-gray-700 mb-2">Doctors</h3>
         {doctors.map((doc) => (
-          <div
-            key={doc.id}
-            className="flex justify-between items-center bg-white rounded-xl shadow-md p-4 border border-gray-100"
-          >
+          <div key={doc.npi} className="flex justify-between ...">
             <div className="flex items-center">
               <Image
                 src={doc.img}
@@ -135,7 +114,7 @@ export default function AppointmentPage() {
               </div>
             </div>
             <button
-              onClick={() => handleDeleteDoctor(doc.id)}
+              onClick={() => handleDeleteDoctor(doc.npi)}
               className="text-gray-400 hover:text-red-500"
             >
               <i className="ri-delete-bin-6-line text-xl"></i>

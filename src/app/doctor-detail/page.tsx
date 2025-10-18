@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 export const dynamic = "force-dynamic";
 
@@ -23,11 +24,12 @@ export default function DoctorDetailPage() {
 function DoctorDetailPageContent() {
   const searchParams = useSearchParams();
   const doctorId = searchParams.get("id");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [doctor, setDoctor] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("about");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
 
+  // Load doctor info
   useEffect(() => {
     if (!doctorId) return;
 
@@ -38,7 +40,6 @@ function DoctorDetailPageContent() {
 
     const loadDoctorData = async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let doctors: any[] = [];
 
         if (isLocalhost) {
@@ -63,6 +64,39 @@ function DoctorDetailPageContent() {
     loadDoctorData();
   }, [doctorId]);
 
+  // Load preselected doctors on mount
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("selectedDoctors") || "[]");
+    setSelectedDoctors(stored.map((d: any) => d.npi));
+  }, []);
+
+  // Handle toggle
+  const handleSelectDoctor = (checked: boolean) => {
+    if (!doctor) return;
+
+    const stored = JSON.parse(localStorage.getItem("selectedDoctors") || "[]");
+    const doctorData = {
+      npi: doctor.npi,
+      name: `${doctor.first_name} ${doctor.last_name}`,
+      specialty: doctor.primary_specialty,
+      rating: doctor.ratings?.[0]?.score || "N/A",
+      reviews: doctor.ratings?.[0]?.count || 0,
+      img: doctor.profile_picture_url || "/doctor.png",
+    };
+
+    let updated;
+    if (checked) {
+      const exists = stored.some((d: any) => d.npi === doctor.npi);
+      updated = exists ? stored : [...stored, doctorData];
+    } else {
+      updated = stored.filter((d: any) => d.npi !== doctor.npi);
+    }
+
+    localStorage.setItem("selectedDoctors", JSON.stringify(updated));
+    setSelectedDoctors(updated.map((d: any) => d.npi));
+    window.dispatchEvent(new Event("storage"));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -78,6 +112,8 @@ function DoctorDetailPageContent() {
       </main>
     );
   }
+
+  const isSelected = selectedDoctors.includes(doctor.npi);
 
   return (
     <main className="relative min-h-screen flex flex-col items-center px-6 py-10">
@@ -111,8 +147,16 @@ function DoctorDetailPageContent() {
             </p>
           </div>
         </div>
+
+        {/* Working Checkbox */}
         <label className="flex items-center text-sm text-gray-600">
-          <input type="checkbox" className="mr-2" /> AI Appointment
+          <input
+            type="checkbox"
+            className="mr-2"
+            checked={isSelected}
+            onChange={(e) => handleSelectDoctor(e.target.checked)}
+          />
+          AI Appointment
         </label>
       </section>
 
@@ -121,21 +165,9 @@ function DoctorDetailPageContent() {
         <div className="flex items-center mb-4">
           {[
             { id: "about", label: "About Doctor", icon: "ri-user-3-line" },
-            {
-              id: "education",
-              label: "Education",
-              icon: "ri-graduation-cap-line",
-            },
-            {
-              id: "certifications",
-              label: "Certifications",
-              icon: "ri-medal-line",
-            },
-            {
-              id: "publications",
-              label: "Publications",
-              icon: "ri-book-open-line",
-            },
+            { id: "education", label: "Education", icon: "ri-graduation-cap-line" },
+            { id: "certifications", label: "Certifications", icon: "ri-medal-line" },
+            { id: "publications", label: "Publications", icon: "ri-book-open-line" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -172,9 +204,7 @@ function DoctorDetailPageContent() {
                   <li key={i}>{item}</li>
                 ))}
               </ul>
-              <h3 className="font-semibold text-gray-700 mt-4 mb-2">
-                Hospitals
-              </h3>
+              <h3 className="font-semibold text-gray-700 mt-4 mb-2">Hospitals</h3>
               <ul className="list-disc list-inside text-gray-600 space-y-1">
                 {doctor.hospitals?.map((h: string, i: number) => (
                   <li key={i}>{h}</li>
