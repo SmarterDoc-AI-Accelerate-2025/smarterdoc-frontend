@@ -6,6 +6,7 @@ import DoctorMap from "@/components/DoctorMap";
 import Header from "@/components/Header";
 import mockDoctorsData from "@/data/mockDoctors.json";
 import Link from "next/link";
+import DoctorAddedPopup from "@/components/DoctorAddedPopup";
 
 interface Rating {
   source: string;
@@ -30,23 +31,22 @@ function DoctorPageContent() {
   const [topDoctors, setTopDoctors] = useState<Doctor[]>([]);
   const [otherDoctors, setOtherDoctors] = useState<Doctor[]>([]);
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<any>(null);
 
-  // Load doctors
   useEffect(() => {
-    // Always try to load from localStorage first (real search results)
     const storedDoctors = localStorage.getItem("doctorResults");
     if (storedDoctors) {
       try {
         const parsed = JSON.parse(storedDoctors);
         setTopDoctors(parsed.slice(0, 3));
         setOtherDoctors(parsed.slice(3));
-        return; // Exit early if we have real data
+        return;
       } catch (error) {
         console.error("Failed to parse doctorResults:", error);
       }
     }
 
-    // Fallback to mock data only if no real data is available
     const isLocalhost =
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" ||
@@ -58,14 +58,12 @@ function DoctorPageContent() {
       setOtherDoctors(mockDoctors.slice(3));
     }
 
-    // Load preselected doctors
     const storedSelected = JSON.parse(
       localStorage.getItem("selectedDoctors") || "[]"
     );
     setSelectedDoctors(storedSelected.map((d: any) => d.npi));
   }, []);
 
-  // Sync with Header in real time
   useEffect(() => {
     localStorage.setItem(
       "selectedDoctors",
@@ -85,10 +83,24 @@ function DoctorPageContent() {
     window.dispatchEvent(new Event("storage"));
   }, [selectedDoctors, topDoctors, otherDoctors]);
 
-  const handleCheckboxChange = (npi: string) => {
-    setSelectedDoctors((prev) =>
-      prev.includes(npi) ? prev.filter((id) => id !== npi) : [...prev, npi]
-    );
+  const handleCheckboxChange = (doc: Doctor) => {
+    setSelectedDoctors((prev) => {
+      if (prev.includes(doc.npi)) {
+        return prev.filter((id) => id !== doc.npi);
+      } else {
+        const doctorData = {
+          npi: doc.npi,
+          name: `${doc.first_name} ${doc.last_name}`,
+          specialty: doc.primary_specialty,
+          rating: doc.ratings?.[0]?.score || "N/A",
+          reviews: doc.ratings?.[0]?.count || 0,
+          img: doc.profile_picture_url || "/doctor.png",
+        };
+        setSelectedDoctorInfo(doctorData);
+        setShowPopup(true);
+        return [...prev, doc.npi];
+      }
+    });
   };
 
   const getRatingInfo = (ratings: Rating[]) => {
@@ -142,7 +154,7 @@ function DoctorPageContent() {
             type="checkbox"
             className="mr-2"
             checked={selectedDoctors.includes(doc.npi)}
-            onChange={() => handleCheckboxChange(doc.npi)}
+            onChange={() => handleCheckboxChange(doc)}
           />
           AI Appointment
         </label>
@@ -184,6 +196,13 @@ function DoctorPageContent() {
           ))}
         </div>
       </section>
+
+      {showPopup && selectedDoctorInfo && (
+        <DoctorAddedPopup
+          doctor={selectedDoctorInfo}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
     </main>
   );
 }
