@@ -6,6 +6,7 @@ import { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
+import DoctorAddedPopup from "@/components/DoctorAddedPopup";
 
 export default function DoctorDetailPage() {
   return (
@@ -28,6 +29,8 @@ function DoctorDetailPageContent() {
   const [activeTab, setActiveTab] = useState("about");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<any>(null);
 
   // Load doctor info
   useEffect(() => {
@@ -64,13 +67,13 @@ function DoctorDetailPageContent() {
     loadDoctorData();
   }, [doctorId]);
 
-  // Load preselected doctors on mount
+  // Load preselected doctors
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("selectedDoctors") || "[]");
     setSelectedDoctors(stored.map((d: any) => d.npi));
   }, []);
 
-  // Handle toggle
+  // Handle select
   const handleSelectDoctor = (checked: boolean) => {
     if (!doctor) return;
 
@@ -88,6 +91,8 @@ function DoctorDetailPageContent() {
     if (checked) {
       const exists = stored.some((d: any) => d.npi === doctor.npi);
       updated = exists ? stored : [...stored, doctorData];
+      setSelectedDoctorInfo(doctorData);
+      setShowPopup(true);
     } else {
       updated = stored.filter((d: any) => d.npi !== doctor.npi);
     }
@@ -148,7 +153,7 @@ function DoctorDetailPageContent() {
           </div>
         </div>
 
-        {/* Working Checkbox */}
+        {/* Checkbox */}
         <label className="flex items-center text-sm text-gray-600">
           <input
             type="checkbox"
@@ -234,6 +239,13 @@ function DoctorDetailPageContent() {
           )}
         </div>
       </section>
+
+      {showPopup && selectedDoctorInfo && (
+        <DoctorAddedPopup
+          doctor={selectedDoctorInfo}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
     </main>
   );
 }
