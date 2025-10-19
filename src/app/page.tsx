@@ -19,9 +19,29 @@ declare global {
   }
 }
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  "https://smarterdoc-backend-1094971678787.us-central1.run.app";
+// Auto-detect API URL based on environment
+const getApiUrl = () => {
+  // If explicitly set, use it
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // In browser, check if we're on localhost
+  if (typeof window !== "undefined") {
+    const isLocalDev = 
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+    
+    if (isLocalDev) {
+      return "http://localhost:8080";  // Local backend
+    }
+  }
+  
+  // Default to production
+  return "https://smarterdoc-backend-1094971678787.us-central1.run.app";
+};
+
+const API_URL = getApiUrl();
 
 export default function Home() {
   const [specialty, setSpecialty] = useState("");
@@ -97,31 +117,40 @@ export default function Home() {
     };
   }, [isRecording]);
 
-  // Text Search
+  // Text Search - Using AI-powered recommendations
   const handleTextSearch = async () => {
     if (!specialty.trim()) return;
     setIsLoading(true);
 
     try {
-      if (isLocalhost) {
-        localStorage.setItem(
-          "doctorResults",
-          JSON.stringify(mockDoctorsData.doctors)
-        );
-        router.push("/doctor");
-        return;
+      // Always use real API for search, even in localhost
+      // Build the query from user inputs
+      const queryParts: string[] = [];
+      
+      if (questionInput.trim()) {
+        queryParts.push(questionInput.trim());
       }
+      
+      if (locationInput.trim()) {
+        queryParts.push(`in ${locationInput}`);
+      }
+      
+      if (insurance.trim()) {
+        queryParts.push(`who accepts ${insurance}`);
+      }
+      
+      // Default query if nothing provided
+      const query = queryParts.length > 0 
+        ? queryParts.join(", ")
+        : "Find a highly qualified doctor with excellent patient reviews";
 
-      const response = await fetch(`${API_URL}/api/v1/search/doctors`, {
+      // Call the AI-powered recommendations API
+      const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          specialty,
-          insurance,
-          location: locationInput,
-          min_experience: 10,
-          has_certification: true,
-          limit: 20,
+          specialty: specialty,
+          query: query,
         }),
       });
 

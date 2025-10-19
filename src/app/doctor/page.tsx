@@ -33,6 +33,20 @@ function DoctorPageContent() {
 
   // Load doctors
   useEffect(() => {
+    // Always try to load from localStorage first (real search results)
+    const storedDoctors = localStorage.getItem("doctorResults");
+    if (storedDoctors) {
+      try {
+        const parsed = JSON.parse(storedDoctors);
+        setTopDoctors(parsed.slice(0, 3));
+        setOtherDoctors(parsed.slice(3));
+        return; // Exit early if we have real data
+      } catch (error) {
+        console.error("Failed to parse doctorResults:", error);
+      }
+    }
+
+    // Fallback to mock data only if no real data is available
     const isLocalhost =
       typeof window !== "undefined" &&
       (window.location.hostname === "localhost" ||
@@ -42,17 +56,6 @@ function DoctorPageContent() {
       const mockDoctors = mockDoctorsData.doctors;
       setTopDoctors(mockDoctors.slice(0, 3));
       setOtherDoctors(mockDoctors.slice(3));
-    } else {
-      const storedDoctors = localStorage.getItem("doctorResults");
-      if (storedDoctors) {
-        try {
-          const parsed = JSON.parse(storedDoctors);
-          setTopDoctors(parsed.slice(0, 3));
-          setOtherDoctors(parsed.slice(3));
-        } catch (error) {
-          console.error("Failed to parse doctorResults:", error);
-        }
-      }
     }
 
     // Load preselected doctors
