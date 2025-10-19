@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import mockDoctorsData from "@/data/mockDoctors.json";
 import mockSpeciality from "@/data/mockSpeciality.json";
 import mockInsurance from "@/data/mockInsurance.json";
 
@@ -486,7 +485,7 @@ export default function Home() {
           <button
             onClick={handleTextSearch}
             disabled={isLoading}
-            className="flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+            className="cursor-pointer flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
           >
             {isLoading ? (
               <i className="ri-loader-4-line animate-spin"></i>

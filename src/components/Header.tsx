@@ -145,7 +145,7 @@ export default function Header() {
             <button
               onClick={handleSearch}
               disabled={isLoading}
-              className="flex items-center justify-center h-9 w-9 bg-[#8C57FF] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+              className="cursor-pointer flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
             >
               {isLoading ? (
                 <i className="ri-loader-4-line animate-spin"></i>
@@ -155,16 +155,19 @@ export default function Header() {
             </button>
           </div>
         </div>
+
+        {/* Appointment Button */}
         <button
           onClick={() => hasSelectedDoctors && router.push("/appointment")}
           disabled={!hasSelectedDoctors}
-          className={`flex items-center justify-center h-12 w-12 transition ${
+          className={`ml-4 flex items-center justify-center px-4 h-12 rounded-lg text-white font-medium shadow-md transition ${
             hasSelectedDoctors
-              ? "text-[#433C50] cursor-pointer"
-              : "text-[#433C50] cursor-not-allowed opacity-50"
+              ? "bg-[#9D73F7] hover:bg-[#8A38F5] cursor-pointer"
+              : "bg-[#8C57FF]/20 cursor-not-allowed"
           }`}
         >
-          <i className="ri-health-book-line text-3xl"></i>
+          <i className="ri-health-book-line mr-2 text-lg"></i>
+          Appointment
         </button>
       </div>
     </header>
