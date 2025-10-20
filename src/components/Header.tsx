@@ -86,10 +86,10 @@ export default function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between w-full max-w-6xl mb-8 z-10">
+    <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full max-w-6xl mb-8 z-10 gap-4 sm:gap-0">
       {/* Logo */}
       <div
-        className="flex items-center cursor-pointer select-none"
+        className="flex items-center justify-center sm:justify-start cursor-pointer select-none"
         onClick={() => router.push("/")}
       >
         <Image
@@ -99,16 +99,18 @@ export default function Header() {
           height={28}
           className="mr-2"
         />
-        <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          SmarterDoc AI
+        </h1>
       </div>
 
       {/* Search Section */}
-      <div className="flex items-center">
-        <div className="flex items-center h-12 rounded-full border border-gray-300 bg-white shadow-sm px-6 py-2">
+      <div className="flex flex-col sm:flex-row sm:items-center w-full sm:w-auto gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center w-full border border-gray-300 bg-white shadow-sm rounded-xl sm:rounded-full px-4 sm:px-6 py-3 sm:py-2">
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="flex-1 max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
+            className="flex-1 min-w-[140px] sm:max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none mb-2 sm:mb-0"
             title={specialty}
           >
             <option value="">Specialty</option>
@@ -124,13 +126,13 @@ export default function Header() {
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 pt-2 sm:pt-0 mb-2 sm:mb-0"
           />
 
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
-            className="flex-1 max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
+            className="flex-1 min-w-[140px] sm:max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 appearance-none mb-2 sm:mb-0"
             title={insurance}
           >
             <option value="">Insurance</option>
@@ -141,11 +143,11 @@ export default function Header() {
             ))}
           </select>
 
-          <div className="flex items-center space-x-2 ml-4">
+          <div className="flex justify-end sm:items-center sm:ml-4">
             <button
               onClick={handleSearch}
               disabled={isLoading}
-              className="cursor-pointer flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+              className="cursor-pointer flex items-center justify-center h-9 w-9 bg-[#433C50] text-white rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
             >
               {isLoading ? (
                 <i className="ri-loader-4-line animate-spin"></i>
@@ -160,7 +162,7 @@ export default function Header() {
         <button
           onClick={() => hasSelectedDoctors && router.push("/appointment")}
           disabled={!hasSelectedDoctors}
-          className={`ml-4 flex items-center justify-center px-4 h-12 rounded-lg text-white font-medium shadow-md transition ${
+          className={`w-full sm:w-auto flex items-center justify-center px-4 h-12 rounded-lg text-white font-medium shadow-md transition ${
             hasSelectedDoctors
               ? "bg-[#9D73F7] hover:bg-[#8A38F5] cursor-pointer"
               : "bg-[#8C57FF]/20 cursor-not-allowed"

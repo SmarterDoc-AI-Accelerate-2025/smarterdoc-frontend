@@ -123,14 +123,14 @@ function DoctorPageContent() {
       <Link
         href={`/doctor-detail?id=${doc.npi}`}
         key={doc.npi}
-        className="cursor-pointer hover:bg-gray-100 flex items-center bg-white rounded-xl p-4 border border-gray-100 shadow-sm"
+        className="cursor-pointer hover:bg-gray-100 flex flex-col sm:flex-row sm:items-center bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm text-sm sm:text-base"
       >
         <Image
           src={doc.profile_picture_url || "/doctor.png"}
           alt={doc.first_name}
-          width={80}
-          height={80}
-          className="rounded-full mr-4"
+          width={70}
+          height={70}
+          className="rounded-full mb-3 sm:mb-0 sm:mr-4 object-cover"
         />
         <div className="flex-1">
           <h3 className="font-bold text-gray-800">
@@ -146,7 +146,7 @@ function DoctorPageContent() {
           <p className="text-sm text-gray-600">{doc.address}</p>
         </div>
         <label
-          className="flex items-center text-sm text-gray-600"
+          className="flex items-center text-sm text-gray-600 mt-2 sm:mt-0"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -163,34 +163,35 @@ function DoctorPageContent() {
   };
 
   return (
-    <main className="relative min-h-screen flex flex-col items-center px-6 py-10">
+    <main className="relative min-h-screen flex flex-col items-center px-4 sm:px-6 py-8 sm:py-10">
       <Header />
 
       {/* Top 3 Recommended */}
-      <section className="backdrop-blur-md bg-[#F8F7FF] border-2 border-[#FFD9F4] rounded-3xl shadow-lg p-6 w-full max-w-6xl z-10 mb-10">
-        <h2 className="text-xl font-semibold text-[#433C50] mb-4">
+      <section className="backdrop-blur-md bg-[#F8F7FF] border-2 border-[#FFD9F4] rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-6xl z-10 mb-8 sm:mb-10">
+        <h2 className="text-lg sm:text-xl font-semibold text-[#433C50] mb-4 text-center sm:text-left">
           Your {topDoctors.length} specially{" "}
           <span className="text-[#5F72BE]">AI-recommended</span> doctors
         </h2>
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="flex flex-col-reverse md:grid md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
             {topDoctors.map((doc) => (
               <DoctorCard key={doc.npi} {...doc} />
             ))}
           </div>
-          <div className="rounded-xl overflow-hidden">
+          <div className="h-[300px] sm:h-auto rounded-xl overflow-hidden">
             <DoctorMap doctors={doctorsForMap} />
           </div>
         </div>
       </section>
 
       {/* Explore More Doctors */}
-      <section className="bg-white border-2 border-[#2E263D38] rounded-3xl shadow-lg p-6 w-full max-w-6xl z-10 mb-10">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+      <section className="bg-white border-2 border-[#2E263D38] rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-6xl z-10 mb-8 sm:mb-10">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-4 text-center sm:text-left">
           Explore more doctors
         </h3>
-        <div className="space-y-4">
+
+        <div className="space-y-3 sm:space-y-4">
           {otherDoctors.map((doc) => (
             <DoctorCard key={doc.npi} {...doc} />
           ))}
