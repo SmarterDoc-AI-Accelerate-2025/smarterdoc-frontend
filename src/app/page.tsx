@@ -24,18 +24,18 @@ const getApiUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
+
   // In browser, check if we're on localhost
   if (typeof window !== "undefined") {
-    const isLocalDev = 
+    const isLocalDev =
       window.location.hostname === "localhost" ||
       window.location.hostname === "127.0.0.1";
-    
+
     if (isLocalDev) {
-      return "http://localhost:8080";  // Local backend
+      return "http://localhost:8080"; // Local backend
     }
   }
-  
+
   // Default to production
   return "https://smarterdoc-backend-1094971678787.us-central1.run.app";
 };
@@ -125,23 +125,24 @@ export default function Home() {
       // Always use real API for search, even in localhost
       // Build the query from user inputs
       const queryParts: string[] = [];
-      
+
       if (questionInput.trim()) {
         queryParts.push(questionInput.trim());
       }
-      
+
       if (locationInput.trim()) {
         queryParts.push(`in ${locationInput}`);
       }
-      
+
       if (insurance.trim()) {
         queryParts.push(`who accepts ${insurance}`);
       }
-      
+
       // Default query if nothing provided
-      const query = queryParts.length > 0 
-        ? queryParts.join(", ")
-        : "Find a highly qualified doctor with excellent patient reviews";
+      const query =
+        queryParts.length > 0
+          ? queryParts.join(", ")
+          : "Find a highly qualified doctor with excellent patient reviews";
 
       // Call the AI-powered recommendations API
       const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
@@ -363,7 +364,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-16 relative">
+    <main className="min-h-screen flex flex-col items-center px-4 py-12 md:py-16 relative">
       {/* Background */}
       <Image
         src="/homebg.png"
@@ -375,7 +376,7 @@ export default function Home() {
 
       {/* Header */}
       <header
-        className="flex items-center justify-start w-full max-w-5xl mb-12 z-10 cursor-pointer"
+        className="flex items-center justify-center sm:justify-start w-full max-w-5xl mb-10 sm:mb-12 z-10 cursor-pointer"
         onClick={() => router.push("/")}
       >
         <Image
@@ -385,36 +386,37 @@ export default function Home() {
           height={32}
           className="mr-2"
         />
-        <h1 className="text-2xl font-bold text-gray-800">SmarterDoc AI</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+          SmarterDoc AI
+        </h1>
       </header>
 
       {/* Hero */}
-      <section className="text-center mb-10 z-10">
-        <h2 className="text-4xl font-bold mb-2" style={{ color: "#433C50" }}>
+      <section className="text-center mb-8 sm:mb-10 z-10 px-2">
+        <h2
+          className="text-2xl sm:text-4xl font-bold mb-2"
+          style={{ color: "#433C50" }}
+        >
           Smart guidance to the right doctor
         </h2>
-        <p className="text-gray-700" style={{ color: "#5F72BE" }}>
+        <p className="text-base sm:text-lg" style={{ color: "#5F72BE" }}>
           We connect you with the best care — clearly, fairly, and personally.
         </p>
       </section>
 
-      {/* Search */}
-      <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-6 w-full max-w-4xl z-10 space-y-4">
-        <div className="flex items-center h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4">
+      {/* Search Container */}
+      <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-4xl z-10 space-y-4">
+        {/* Top Input Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4">
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none"
+            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none w-full"
             title={specialty}
           >
             <option value="">Specialty</option>
             {specialtiesList.map((item, i) => (
-              <option
-                key={i}
-                value={item}
-                title={item}
-                className="truncate max-w-[180px]"
-              >
+              <option key={i} value={item} title={item}>
                 {item.length > 30 ? `${item.slice(0, 30)}…` : item}
               </option>
             ))}
@@ -425,23 +427,18 @@ export default function Home() {
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300"
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
           />
 
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
-            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 ml-4 border-l pl-4 border-gray-300 appearance-none"
+            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 w-full"
             title={insurance}
           >
             <option value="">Insurance</option>
             {insuranceList.map((plan, i) => (
-              <option
-                key={i}
-                value={plan}
-                title={plan}
-                className="truncate max-w-[160px]"
-              >
+              <option key={i} value={plan} title={plan}>
                 {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
               </option>
             ))}
@@ -449,61 +446,72 @@ export default function Home() {
         </div>
 
         {/* Voice Row */}
-        <div className="flex items-center h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-6 py-4">
-          <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
-          <input
-            type="text"
-            placeholder="Ask a question..."
-            value={questionInput}
-            onChange={(e) => setQuestionInput(e.target.value)}
-            className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center flex-1 w-full">
+            <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
+            <input
+              type="text"
+              placeholder="Ask a question..."
+              value={questionInput}
+              onChange={(e) => setQuestionInput(e.target.value)}
+              className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+            />
+          </div>
 
-          <button
-            onClick={handleVoiceSearch}
-            disabled={isLoading}
-            className={`cursor-pointer p-2 rounded-full transition ${
-              isRecording
-                ? "bg-red-100 text-red-600 animate-pulse"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-            title={
-              isRecording
-                ? "Click to stop recording"
-                : "Click to start recording"
-            }
-          >
-            {isRecording ? (
-              <i className="ri-mic-fill text-xl"></i>
-            ) : isLoading ? (
-              <i className="ri-loader-4-line animate-spin text-xl"></i>
-            ) : (
-              <i className="ri-mic-line text-xl"></i>
-            )}
-          </button>
+          <div className="flex items-center sm:ml-4 gap-3 sm:gap-4 w-full sm:w-auto">
+            <button
+              onClick={handleVoiceSearch}
+              disabled={isLoading}
+              className={`p-2 sm:p-3 rounded-full transition ${
+                isRecording
+                  ? "bg-red-100 text-red-600 animate-pulse"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+              title={
+                isRecording
+                  ? "Click to stop recording"
+                  : "Click to start recording"
+              }
+            >
+              {isRecording ? (
+                <i className="ri-mic-fill text-xl"></i>
+              ) : isLoading ? (
+                <i className="ri-loader-4-line animate-spin text-xl"></i>
+              ) : (
+                <i className="ri-mic-line text-xl"></i>
+              )}
+            </button>
 
-          <button
-            onClick={handleTextSearch}
-            disabled={isLoading}
-            className="cursor-pointer flex items-center justify-center h-9 w-9 ml-4 bg-[#433C50] text-white p-2 rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
-          >
-            {isLoading ? (
-              <i className="ri-loader-4-line animate-spin"></i>
-            ) : (
-              <i className="ri-search-line"></i>
-            )}
-          </button>
+            <button
+              onClick={handleTextSearch}
+              disabled={isLoading}
+              className="flex items-center align-center justify-center h-10 w-10  sm:h-9 sm:w-9 bg-[#433C50] text-white rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+            >
+              {isLoading ? (
+                <i className="ri-loader-4-line animate-spin"></i>
+              ) : (
+                <i className="ri-search-line"></i>
+              )}
+            </button>
+          </div>
         </div>
 
         {transcript && (
           <p className="text-sm text-gray-600 text-center italic mt-2">
-            🎙️ “{transcript}”
+            {transcript}
           </p>
         )}
       </div>
 
-      <div className="absolute bottom-30 left-1/2 -translate-x-1/2 w-[320px] z-10">
-        <Image src="/robot.png" alt="Doctor robot" width={400} height={400} />
+      {/* Robot Image */}
+      <div className="mt-10 sm:mt-14 w-[220px] sm:w-[320px] z-10">
+        <Image
+          src="/robot.png"
+          alt="Doctor robot"
+          width={400}
+          height={400}
+          className="mx-auto object-contain"
+        />
       </div>
     </main>
   );
