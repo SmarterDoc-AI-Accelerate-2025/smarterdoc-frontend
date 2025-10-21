@@ -379,13 +379,9 @@ export default function Home() {
         className="flex items-center justify-center sm:justify-start w-full max-w-5xl mb-10 sm:mb-12 z-10 cursor-pointer"
         onClick={() => router.push("/")}
       >
-        <Image
-          src="/logo.png"
-          alt="SmarterDoc Logo"
-          width={32}
-          height={32}
-          className="mr-2"
-        />
+        <div className="relative w-8 h-8 mr-2">
+          <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+        </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
           SmarterDoc AI
         </h1>
@@ -511,6 +507,7 @@ export default function Home() {
           width={400}
           height={400}
           className="mx-auto object-contain"
+          style={{ height: "auto" }}
         />
       </div>
     </main>
