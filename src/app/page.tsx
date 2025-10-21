@@ -169,29 +169,30 @@ export default function Home() {
         <div className="relative w-8 h-8 mr-2">
           <Image src="/logo.png" alt="Logo" fill className="object-contain" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+        <h1 className="text-xl sm:text-2xl font-semibold font-[Inter] text-gray-800">
           SmarterDoc AI
         </h1>
       </header>
 
       <section className="text-center mb-8 sm:mb-10 z-10 px-2">
         <h2
-          className="text-2xl sm:text-4xl font-bold mb-2"
-          style={{ color: "#433C50" }}
+          className="text-2xl sm:text-4xl font-extrabold font-[Inter] mb-2"
+          style={{ color: "var(--text-primary)" }}
         >
           Smart guidance to the right doctor
         </h2>
-        <p className="text-base sm:text-lg" style={{ color: "#5F72BE" }}>
+        <p className="text-base sm:text-lg bg-gradient-to-r from-[#5F72BE] to-[#9921E8] bg-clip-text text-transparent">
           We connect you with the best care — clearly, fairly, and personally.
         </p>
       </section>
 
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-4xl z-10 space-y-4">
+        {/* Top Row */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none w-full"
+            className="input-text flex-1 outline-none bg-transparent appearance-none w-full"
           >
             <option value="">Specialty</option>
             {mockSpeciality.map((item, i) => (
@@ -206,13 +207,13 @@ export default function Home() {
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
+            className="input-text flex-1 outline-none bg-transparent border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
           />
 
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 w-full"
+            className="input-text flex-1 outline-none bg-transparent border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 w-full"
           >
             <option value="">Insurance</option>
             {mockInsurance.map((plan, i) => (
@@ -223,15 +224,16 @@ export default function Home() {
           </select>
         </div>
 
+        {/* Bottom Row */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
           <div className="flex items-center flex-1 w-full">
-            <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
+            <i className="ri-search-line text-gray-400 text-xl mr-3"></i>
             <input
               type="text"
               placeholder="Ask a question..."
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
-              className="flex-1 outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+              className="input-text flex-1 outline-none bg-transparent"
             />
           </div>
 
@@ -239,7 +241,7 @@ export default function Home() {
             <button
               onClick={handleVoiceSearch}
               disabled={isLoading}
-              className={`p-2 sm:p-3 rounded-full transition ${
+              className={`flex items-center justify-center h-10 w-10 rounded-full transition ${
                 isRecording
                   ? "bg-red-100 text-red-600 animate-pulse"
                   : "text-gray-700 hover:bg-gray-100"
@@ -267,6 +269,18 @@ export default function Home() {
             </button>
           </div>
         </div>
+
+        {/* Scoped placeholder styling */}
+        <style jsx>{`
+          .input-text {
+            color: var(--text-secondary);
+          }
+
+          .input-text::placeholder {
+            color: var(--text-secondary);
+            opacity: 1;
+          }
+        `}</style>
       </div>
 
       <div className="mt-10 sm:mt-14 w-[220px] sm:w-[320px] z-10">

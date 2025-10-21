@@ -1,0 +1,26 @@
+:root {
+    /* Background */
+    --background: #fefefe;
+
+    /* Paper */
+    --paper-1: #ffffff;
+    --paper-2: #f7f8fa;
+    --paper-overlay: #2e263d80;
+    /* 50% opacity */
+
+    /* Border */
+    --border-divider: #2e263d1f;
+    /* 12% opacity */
+    --border-border: #2e263d38;
+    /* 22% opacity */
+
+    /* Text */
+    --text-primary: #433c50;
+    --text-secondary: #636669;
+    --text-disable: #2e263d66;
+    /* 40% opacity */
+
+    /* Primary */
+    --primary-main: #9d73f7;
+    --primary-support: #f8f7ff;
+}
