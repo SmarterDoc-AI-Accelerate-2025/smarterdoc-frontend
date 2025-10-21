@@ -18,29 +18,9 @@ declare global {
   }
 }
 
-// Auto-detect API URL based on environment
-const getApiUrl = () => {
-  // If explicitly set, use it
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
-  }
-
-  // In browser, check if we're on localhost
-  if (typeof window !== "undefined") {
-    const isLocalDev =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1";
-
-    if (isLocalDev) {
-      return "http://localhost:8080"; // Local backend
-    }
-  }
-
-  // Default to production
-  return "https://smarterdoc-backend-1094971678787.us-central1.run.app";
-};
-
-const API_URL = getApiUrl();
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://smarterdoc-backend-1094971678787.us-central1.run.app";
 
 export default function Home() {
   const [specialty, setSpecialty] = useState("");
@@ -53,21 +33,14 @@ export default function Home() {
   const [, setFinalTranscript] = useState("");
   const [, setInterimTranscript] = useState("");
   const finalRef = useRef<string>("");
-  const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
-  const [insuranceList, setInsuranceList] = useState<string[]>([]);
   const router = useRouter();
 
-  // WebSocket and audio processing refs
+  // WebSocket and audio refs
   const websocketRef = useRef<WebSocket | null>(null);
   const mediaRecorderRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-
-  const isLocalhost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
 
   // Convert Float32Array to Int16Array (LINEAR16 PCM)
   const float32ToInt16 = (buffer: Float32Array): Int16Array => {
@@ -79,85 +52,48 @@ export default function Home() {
     return int16;
   };
 
-  // Fetch dropdown data
-  useEffect(() => {
-    const loadDropdowns = async () => {
-      if (isLocalhost) {
-        setSpecialtiesList(mockSpeciality);
-        setInsuranceList(mockInsurance);
-        return;
-      }
-
-      try {
-        const [specialtiesRes, insuranceRes] = await Promise.all([
-          fetch(`${API_URL}/api/v1/search/specialties`),
-          fetch(`${API_URL}/api/v1/search/insurance-plans`),
-        ]);
-        if (specialtiesRes.ok) setSpecialtiesList(await specialtiesRes.json());
-        if (insuranceRes.ok) setInsuranceList(await insuranceRes.json());
-      } catch (error) {
-        console.error("Error fetching dropdowns:", error);
-      }
-    };
-    loadDropdowns();
-  }, [isLocalhost]);
-
+  // Clear local selection state on load
   useEffect(() => {
     localStorage.removeItem("selectedDoctors");
-    window.dispatchEvent(new Event("storage")); // notify Header
+    window.dispatchEvent(new Event("storage"));
   }, []);
 
-  // Cleanup on component unmount
+  // Cleanup audio if recording
   useEffect(() => {
     return () => {
-      if (isRecording) {
-        stopVoiceRecording();
-      }
+      if (isRecording) stopVoiceRecording();
     };
   }, [isRecording]);
 
-  // Text Search - Using AI-powered recommendations
+  /** -----------------------------
+   * 🔍 Handle Text Search (AI-powered)
+   * ----------------------------- */
   const handleTextSearch = async () => {
     if (!specialty.trim()) return;
     setIsLoading(true);
 
     try {
-      // Always use real API for search, even in localhost
-      // Build the query from user inputs
       const queryParts: string[] = [];
 
-      if (questionInput.trim()) {
-        queryParts.push(questionInput.trim());
-      }
+      if (questionInput.trim()) queryParts.push(questionInput.trim());
+      if (locationInput.trim()) queryParts.push(`in ${locationInput}`);
+      if (insurance.trim()) queryParts.push(`who accepts ${insurance}`);
 
-      if (locationInput.trim()) {
-        queryParts.push(`in ${locationInput}`);
-      }
-
-      if (insurance.trim()) {
-        queryParts.push(`who accepts ${insurance}`);
-      }
-
-      // Default query if nothing provided
       const query =
         queryParts.length > 0
           ? queryParts.join(", ")
-          : "Find a highly qualified doctor with excellent patient reviews";
+          : `Find a top-rated ${specialty} doctor`;
 
-      // Call the AI-powered recommendations API
       const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          specialty: specialty,
-          query: query,
-        }),
+        body: JSON.stringify({ specialty, query }),
       });
 
       if (!response.ok)
         throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
 
+      const data = await response.json();
       localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
       router.push("/doctor");
     } catch (error) {
@@ -168,199 +104,92 @@ export default function Home() {
     }
   };
 
-  // Voice Search with WebSocket
+  /** -----------------------------
+   * 🎤 Voice Search (WebSocket streaming)
+   * ----------------------------- */
   const handleVoiceSearch = async () => {
     if (isRecording) {
-      // Stop recording
       stopVoiceRecording();
       return;
     }
 
     try {
-      // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
+        audio: { channelCount: 1, sampleRate: 16000 },
       });
 
-      // Connect WebSocket (cloud-safe)
-      const wsBase =
-        (process.env.NEXT_PUBLIC_WS_URL as string | undefined) ||
-        (() => {
-          try {
-            const api = new URL(API_URL);
-            const proto = api.protocol === "https:" ? "wss:" : "ws:";
-            return `${proto}//${api.host}`;
-          } catch {
-            const proto =
-              window.location.protocol === "https:" ? "wss:" : "ws:";
-            const host = isLocalhost ? "localhost:8080" : window.location.host;
-            return `${proto}//${host}`;
-          }
-        })();
-      const wsUrl = `${wsBase}/api/v1/speech/stream/websocket?language_code=en-US&sample_rate=16000`;
-      console.log("Connecting to WebSocket:", wsUrl);
+      const proto = API_URL.startsWith("https") ? "wss:" : "ws:";
+      const wsUrl = `${proto}//${
+        new URL(API_URL).host
+      }/api/v1/speech/stream/websocket?language_code=en-US&sample_rate=16000`;
 
       const websocket = new WebSocket(wsUrl);
       websocketRef.current = websocket;
 
       websocket.onopen = async () => {
-        console.log("WebSocket connected");
         setIsRecording(true);
         setTranscript("");
-        setFinalTranscript("");
-        setInterimTranscript("");
         finalRef.current = "";
 
-        // Setup audio processing (avoid any by typing webkitAudioContext)
         const AudioCtx: typeof AudioContext =
           window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioCtx({
-          sampleRate: 16000,
-        });
+        const audioContext = new AudioCtx({ sampleRate: 16000 });
         audioContextRef.current = audioContext;
 
         const streamSource = audioContext.createMediaStreamSource(stream);
         streamSourceRef.current = streamSource;
-
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
 
-        let audioChunkCount = 0;
         processor.onaudioprocess = (e) => {
-          if (websocket && websocket.readyState === WebSocket.OPEN) {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const int16Data = float32ToInt16(inputData);
-
-            try {
-              websocket.send(int16Data.buffer);
-              audioChunkCount++;
-
-              if (audioChunkCount === 1) {
-                console.log(
-                  `✓ Sent first audio chunk (${int16Data.length * 2} bytes)`
-                );
-              }
-            } catch (error) {
-              console.error("Error sending audio data:", error);
-            }
+          if (websocket.readyState === WebSocket.OPEN) {
+            const int16Data = float32ToInt16(e.inputBuffer.getChannelData(0));
+            websocket.send(int16Data.buffer);
           }
         };
 
         streamSource.connect(processor);
         processor.connect(audioContext.destination);
-
-        // Resume audio context if suspended
-        if (audioContext.state === "suspended") {
-          await audioContext.resume();
-        }
-
-        mediaRecorderRef.current = stream;
-        console.log("Audio setup complete");
       };
 
       websocket.onmessage = (event) => {
-        type SttResult = {
-          transcript?: string;
-          is_final?: boolean;
-          confidence?: number;
-          error?: string;
-        };
-        const result = JSON.parse(event.data) as SttResult;
-        console.log("Received result:", result);
-
-        if (result.error) {
-          console.error("Error in result:", result.error);
-          setTranscript(`Error: ${result.error}`);
-          return;
-        }
-
-        if (result.transcript && result.transcript.trim()) {
+        const result = JSON.parse(event.data);
+        if (result.transcript) {
           const chunk = result.transcript.trim();
           if (result.is_final) {
-            // Append final chunk to accumulated transcript
-            setFinalTranscript((prev) => {
-              const updated = prev ? `${prev} ${chunk}` : chunk;
-              finalRef.current = updated;
-              setTranscript(updated);
-              setQuestionInput(updated);
-              return updated;
-            });
-            setInterimTranscript("");
+            finalRef.current += ` ${chunk}`;
+            setTranscript(finalRef.current.trim());
+            setQuestionInput(finalRef.current.trim());
           } else {
-            // Show interim combined with accumulated final transcript
-            setInterimTranscript(chunk);
-            const combined = finalRef.current
-              ? `${finalRef.current} ${chunk}`
-              : chunk;
-            setTranscript(combined);
+            setTranscript(`${finalRef.current} ${chunk}`);
           }
         }
       };
 
-      websocket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        console.error("WebSocket URL was:", wsUrl);
-        console.error("WebSocket readyState:", websocket.readyState);
-        setTranscript(`Connection error: ${wsUrl}`);
+      websocket.onerror = (err) => {
+        console.error("WebSocket error:", err);
         stopVoiceRecording();
       };
 
-      websocket.onclose = () => {
-        console.log("WebSocket closed");
-        if (isRecording) {
-          stopVoiceRecording();
-        }
-      };
+      websocket.onclose = stopVoiceRecording;
     } catch (error) {
       console.error("Error starting recording:", error);
-      setTranscript(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
     }
   };
 
-  // Stop voice recording
   const stopVoiceRecording = () => {
     setIsRecording(false);
-
-    // Close WebSocket
-    if (
-      websocketRef.current &&
-      websocketRef.current.readyState === WebSocket.OPEN
-    ) {
+    if (websocketRef.current?.readyState === WebSocket.OPEN) {
       websocketRef.current.send("close");
       websocketRef.current.close();
     }
     websocketRef.current = null;
 
-    // Stop audio processing
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
+    processorRef.current?.disconnect();
+    streamSourceRef.current?.disconnect();
+    audioContextRef.current?.close();
 
-    if (streamSourceRef.current) {
-      streamSourceRef.current.disconnect();
-      streamSourceRef.current = null;
-    }
-
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-
-    // Stop microphone
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.getTracks().forEach((track) => track.stop());
-      mediaRecorderRef.current = null;
-    }
-
-    console.log("Recording stopped");
+    mediaRecorderRef.current?.getTracks().forEach((track) => track.stop());
   };
 
   return (
@@ -387,7 +216,7 @@ export default function Home() {
         </h1>
       </header>
 
-      {/* Hero */}
+      {/* Hero Section */}
       <section className="text-center mb-8 sm:mb-10 z-10 px-2">
         <h2
           className="text-2xl sm:text-4xl font-bold mb-2"
@@ -402,47 +231,48 @@ export default function Home() {
 
       {/* Search Container */}
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-4xl z-10 space-y-4">
-        {/* Top Input Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4">
+        {/* Dropdown + Input Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
+          {/* Specialty */}
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none w-full"
-            title={specialty}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none w-full"
           >
             <option value="">Specialty</option>
-            {specialtiesList.map((item, i) => (
-              <option key={i} value={item} title={item}>
-                {item.length > 30 ? `${item.slice(0, 30)}…` : item}
+            {mockSpeciality.map((item, i) => (
+              <option key={i} value={item}>
+                {item}
               </option>
             ))}
           </select>
 
+          {/* Location */}
           <input
             type="text"
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
           />
 
+          {/* Insurance */}
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
-            className="flex-1 truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 w-full"
-            title={insurance}
+            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 w-full"
           >
             <option value="">Insurance</option>
-            {insuranceList.map((plan, i) => (
-              <option key={i} value={plan} title={plan}>
-                {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
+            {mockInsurance.map((plan, i) => (
+              <option key={i} value={plan}>
+                {plan}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Voice Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 sm:h-14 w-full rounded-[1vw] border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4">
+        {/* Voice + Search Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
           <div className="flex items-center flex-1 w-full">
             <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
             <input
@@ -455,6 +285,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center sm:ml-4 gap-3 sm:gap-4 w-full sm:w-auto">
+            {/* Mic */}
             <button
               onClick={handleVoiceSearch}
               disabled={isLoading}
@@ -463,11 +294,6 @@ export default function Home() {
                   ? "bg-red-100 text-red-600 animate-pulse"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
-              title={
-                isRecording
-                  ? "Click to stop recording"
-                  : "Click to start recording"
-              }
             >
               {isRecording ? (
                 <i className="ri-mic-fill text-xl"></i>
@@ -478,10 +304,11 @@ export default function Home() {
               )}
             </button>
 
+            {/* Search */}
             <button
               onClick={handleTextSearch}
               disabled={isLoading}
-              className="flex items-center align-center justify-center h-10 w-10  sm:h-9 sm:w-9 bg-[#433C50] text-white rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+              className="flex items-center justify-center h-10 w-10 sm:h-9 sm:w-9 bg-[#433C50] text-white rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
             >
               {isLoading ? (
                 <i className="ri-loader-4-line animate-spin"></i>
@@ -499,7 +326,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Robot Image */}
+      {/* Robot */}
       <div className="mt-10 sm:mt-14 w-[220px] sm:w-[320px] z-10">
         <Image
           src="/robot.png"
@@ -507,7 +334,6 @@ export default function Home() {
           width={400}
           height={400}
           className="mx-auto object-contain"
-          style={{ height: "auto" }}
         />
       </div>
     </main>

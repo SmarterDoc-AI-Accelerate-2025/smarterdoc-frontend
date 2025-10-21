@@ -15,37 +15,7 @@ export default function Header() {
   const [locationInput, setLocationInput] = useState("");
   const [insurance, setInsurance] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [specialtiesList, setSpecialtiesList] = useState<string[]>([]);
-  const [insuranceList, setInsuranceList] = useState<string[]>([]);
   const [hasSelectedDoctors, setHasSelectedDoctors] = useState(false);
-
-  const isLocalhost =
-    typeof window !== "undefined" &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1");
-
-  useEffect(() => {
-    const loadDropdowns = async () => {
-      if (isLocalhost) {
-        setSpecialtiesList(mockSpeciality);
-        setInsuranceList(mockInsurance);
-        return;
-      }
-
-      try {
-        const [specialtiesRes, insuranceRes] = await Promise.all([
-          fetch(`${API_URL}/api/v1/search/specialties/from-bq`),
-          fetch(`${API_URL}/api/v1/search/insurance-plans`),
-        ]);
-        if (specialtiesRes.ok) setSpecialtiesList(await specialtiesRes.json());
-        if (insuranceRes.ok) setInsuranceList(await insuranceRes.json());
-      } catch (error) {
-        console.error("Error fetching dropdowns:", error);
-      }
-    };
-
-    loadDropdowns();
-  }, [isLocalhost]);
 
   useEffect(() => {
     const updateSelectedStatus = () => {
@@ -62,24 +32,35 @@ export default function Header() {
   const handleSearch = async () => {
     if (!specialty.trim()) return;
     setIsLoading(true);
+
     try {
-      const response = await fetch(`${API_URL}/api/v1/search/doctors`, {
+      // Build query parts dynamically
+      const queryParts: string[] = [];
+
+      if (locationInput.trim()) queryParts.push(`in ${locationInput}`);
+      if (insurance.trim()) queryParts.push(`who accepts ${insurance}`);
+
+      const query =
+        queryParts.length > 0
+          ? queryParts.join(", ")
+          : `Find top-rated ${specialty} doctors`;
+
+      // Use the recommendations endpoint
+      const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          specialty,
-          insurance,
-          location: locationInput,
-          min_experience: 10,
-          has_certification: true,
-          limit: 20,
-        }),
+        body: JSON.stringify({ specialty, query }),
       });
+
+      if (!response.ok)
+        throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
       localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
       router.push("/doctor");
     } catch (error) {
       console.error("Search error:", error);
+      router.push("/doctor"); // still navigate for demo
     } finally {
       setIsLoading(false);
     }
@@ -103,20 +84,21 @@ export default function Header() {
       {/* Search Section */}
       <div className="flex flex-col sm:flex-row sm:items-center w-full sm:w-auto gap-3 sm:gap-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center w-full border border-gray-300 bg-white shadow-sm rounded-xl sm:rounded-full px-4 sm:px-6 py-3 sm:py-2">
+          {/* Specialty Dropdown */}
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
             className="flex-1 min-w-[140px] sm:max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none mb-2 sm:mb-0"
-            title={specialty}
           >
             <option value="">Specialty</option>
-            {specialtiesList.map((item, i) => (
-              <option key={i} value={item} title={item}>
-                {item.length > 30 ? `${item.slice(0, 30)}…` : item}
+            {mockSpeciality.map((item, i) => (
+              <option key={i} value={item}>
+                {item}
               </option>
             ))}
           </select>
 
+          {/* Location Input */}
           <input
             type="text"
             placeholder="Location"
@@ -125,20 +107,21 @@ export default function Header() {
             className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 pt-2 sm:pt-0 mb-2 sm:mb-0"
           />
 
+          {/* Insurance Dropdown */}
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
             className="flex-1 min-w-[140px] sm:max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 appearance-none mb-2 sm:mb-0"
-            title={insurance}
           >
             <option value="">Insurance</option>
-            {insuranceList.map((plan, i) => (
-              <option key={i} value={plan} title={plan}>
-                {plan.length > 25 ? `${plan.slice(0, 25)}…` : plan}
+            {mockInsurance.map((plan, i) => (
+              <option key={i} value={plan}>
+                {plan}
               </option>
             ))}
           </select>
 
+          {/* Search Button */}
           <div className="flex justify-end sm:items-center sm:ml-4">
             <button
               onClick={handleSearch}
