@@ -20,17 +20,24 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SmarterDoc",
+  title: "SmarterDoc AI",
   description: "Smart guidance to the right doctor",
+  icons: [
+    { url: "/favicon.png", type: "image/png" },
+    { url: "/favicon.ico", type: "image/x-icon" },
+  ],
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className={`${inter.variable} font-sans`}>
+      <head>
+        <link rel="icon" href="/favicon.png" type="image/png" />
+      </head>
       <body className="antialiased bg-white">{children}</body>
     </html>
   );
