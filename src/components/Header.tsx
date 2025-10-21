@@ -92,13 +92,9 @@ export default function Header() {
         className="flex items-center justify-center sm:justify-start cursor-pointer select-none"
         onClick={() => router.push("/")}
       >
-        <Image
-          src="/logo.png"
-          alt="Logo"
-          width={28}
-          height={28}
-          className="mr-2"
-        />
+        <div className="relative w-8 h-8 mr-2">
+          <Image src="/logo.png" alt="Logo" fill className="object-contain" />
+        </div>
         <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
           SmarterDoc AI
         </h1>
