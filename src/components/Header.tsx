@@ -34,7 +34,6 @@ export default function Header() {
     setIsLoading(true);
 
     try {
-      // Build query parts dynamically
       const queryParts: string[] = [];
 
       if (locationInput.trim()) queryParts.push(`in ${locationInput}`);
@@ -45,7 +44,6 @@ export default function Header() {
           ? queryParts.join(", ")
           : `Find top-rated ${specialty} doctors`;
 
-      // Use the recommendations endpoint
       const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +58,7 @@ export default function Header() {
       router.push("/doctor");
     } catch (error) {
       console.error("Search error:", error);
-      router.push("/doctor"); // still navigate for demo
+      router.push("/doctor");
     } finally {
       setIsLoading(false);
     }
@@ -76,19 +74,22 @@ export default function Header() {
         <div className="relative w-8 h-8 mr-2">
           <Image src="/logo.png" alt="Logo" fill className="object-contain" />
         </div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+        <h1
+          className="text-xl sm:text-2xl font-semibold font-[Inter]"
+          style={{ color: "var(--text-primary)" }}
+        >
           SmarterDoc AI
         </h1>
       </div>
 
       {/* Search Section */}
       <div className="flex flex-col sm:flex-row sm:items-center w-full sm:w-auto gap-3 sm:gap-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center w-full border border-gray-300 bg-white shadow-sm rounded-xl sm:rounded-full px-4 sm:px-6 py-3 sm:py-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center w-full border border-[var(--border-border)] bg-[var(--paper-1)] shadow-sm rounded-xl sm:rounded-full px-4 sm:px-6 py-3 sm:py-2">
           {/* Specialty Dropdown */}
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
-            className="flex-1 min-w-[140px] sm:max-w-[180px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 appearance-none mb-2 sm:mb-0"
+            className="input-text flex-1 min-w-[140px] sm:max-w-[180px] truncate outline-none bg-transparent appearance-none mb-2 sm:mb-0"
           >
             <option value="">Specialty</option>
             {mockSpeciality.map((item, i) => (
@@ -104,14 +105,14 @@ export default function Header() {
             placeholder="Location"
             value={locationInput}
             onChange={(e) => setLocationInput(e.target.value)}
-            className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 pt-2 sm:pt-0 mb-2 sm:mb-0"
+            className="input-text flex-1 outline-none bg-transparent border-t sm:border-t-0 sm:border-l border-[var(--border-border)] sm:ml-4 sm:pl-4 pt-2 sm:pt-0 mb-2 sm:mb-0"
           />
 
           {/* Insurance Dropdown */}
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
-            className="flex-1 min-w-[140px] sm:max-w-[160px] truncate outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-t-0 sm:border-l border-gray-300 sm:ml-4 sm:pl-4 appearance-none mb-2 sm:mb-0"
+            className="input-text flex-1 min-w-[140px] sm:max-w-[160px] truncate outline-none bg-transparent border-t sm:border-t-0 sm:border-l border-[var(--border-border)] sm:ml-4 sm:pl-4 appearance-none mb-2 sm:mb-0"
           >
             <option value="">Insurance</option>
             {mockInsurance.map((plan, i) => (
@@ -151,6 +152,17 @@ export default function Header() {
           Appointment
         </button>
       </div>
+
+      {/* Scoped input styling */}
+      <style jsx>{`
+        .input-text {
+          color: var(--text-secondary);
+        }
+        .input-text::placeholder {
+          color: var(--text-secondary);
+          opacity: 1;
+        }
+      `}</style>
     </header>
   );
 }
