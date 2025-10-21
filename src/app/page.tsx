@@ -5,22 +5,15 @@ import { useRouter } from "next/navigation";
 import mockSpeciality from "@/data/mockSpeciality.json";
 import mockInsurance from "@/data/mockInsurance.json";
 
-// SpeechRecognition setup
-type SpeechRecognitionConstructor =
-  | typeof window.SpeechRecognition
-  | typeof window.webkitSpeechRecognition;
-
-declare global {
-  interface Window {
-    SpeechRecognition: SpeechRecognitionConstructor;
-    webkitSpeechRecognition: SpeechRecognitionConstructor;
-    webkitAudioContext: typeof AudioContext;
-  }
-}
-
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://smarterdoc-backend-1094971678787.us-central1.run.app";
+
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
 
 export default function Home() {
   const [specialty, setSpecialty] = useState("");
@@ -29,20 +22,13 @@ export default function Home() {
   const [questionInput, setQuestionInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [transcript, setTranscript] = useState("");
-  const [, setFinalTranscript] = useState("");
-  const [, setInterimTranscript] = useState("");
-  const finalRef = useRef<string>("");
   const router = useRouter();
 
-  // WebSocket and audio refs
   const websocketRef = useRef<WebSocket | null>(null);
-  const mediaRecorderRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const streamSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
 
-  // Convert Float32Array to Int16Array (LINEAR16 PCM)
   const float32ToInt16 = (buffer: Float32Array): Int16Array => {
     const int16 = new Int16Array(buffer.length);
     for (let i = 0; i < buffer.length; i++) {
@@ -52,37 +38,19 @@ export default function Home() {
     return int16;
   };
 
-  // Clear local selection state on load
   useEffect(() => {
     localStorage.removeItem("selectedDoctors");
     window.dispatchEvent(new Event("storage"));
   }, []);
 
-  // Cleanup audio if recording
-  useEffect(() => {
-    return () => {
-      if (isRecording) stopVoiceRecording();
-    };
-  }, [isRecording]);
-
-  /** -----------------------------
-   * 🔍 Handle Text Search (AI-powered)
-   * ----------------------------- */
   const handleTextSearch = async () => {
-    if (!specialty.trim()) return;
+    if (!specialty.trim() && !questionInput.trim()) return;
     setIsLoading(true);
 
     try {
-      const queryParts: string[] = [];
-
-      if (questionInput.trim()) queryParts.push(questionInput.trim());
-      if (locationInput.trim()) queryParts.push(`in ${locationInput}`);
-      if (insurance.trim()) queryParts.push(`who accepts ${insurance}`);
-
       const query =
-        queryParts.length > 0
-          ? queryParts.join(", ")
-          : `Find a top-rated ${specialty} doctor`;
+        questionInput.trim() ||
+        `Find a top-rated ${specialty || "doctor"} nearby`;
 
       const response = await fetch(`${API_URL}/api/v1/search/recommendations`, {
         method: "POST",
@@ -90,10 +58,9 @@ export default function Home() {
         body: JSON.stringify({ specialty, query }),
       });
 
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-
+      if (!response.ok) throw new Error(`HTTP error ${response.status}`);
       const data = await response.json();
+
       localStorage.setItem("doctorResults", JSON.stringify(data.doctors));
       router.push("/doctor");
     } catch (error) {
@@ -104,9 +71,6 @@ export default function Home() {
     }
   };
 
-  /** -----------------------------
-   * 🎤 Voice Search (WebSocket streaming)
-   * ----------------------------- */
   const handleVoiceSearch = async () => {
     if (isRecording) {
       stopVoiceRecording();
@@ -114,9 +78,8 @@ export default function Home() {
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { channelCount: 1, sampleRate: 16000 },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
 
       const proto = API_URL.startsWith("https") ? "wss:" : "ws:";
       const wsUrl = `${proto}//${
@@ -128,41 +91,36 @@ export default function Home() {
 
       websocket.onopen = async () => {
         setIsRecording(true);
-        setTranscript("");
-        finalRef.current = "";
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
 
-        const AudioCtx: typeof AudioContext =
-          window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioCtx({ sampleRate: 16000 });
         audioContextRef.current = audioContext;
 
-        const streamSource = audioContext.createMediaStreamSource(stream);
-        streamSourceRef.current = streamSource;
+        const source = audioContext.createMediaStreamSource(stream);
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
 
-        processor.onaudioprocess = (e) => {
+        processor.onaudioprocess = (event) => {
           if (websocket.readyState === WebSocket.OPEN) {
-            const int16Data = float32ToInt16(e.inputBuffer.getChannelData(0));
-            websocket.send(int16Data.buffer);
+            const float32 = event.inputBuffer.getChannelData(0);
+            const int16 = float32ToInt16(float32);
+            websocket.send(int16.buffer);
           }
         };
 
-        streamSource.connect(processor);
+        source.connect(processor);
         processor.connect(audioContext.destination);
       };
 
       websocket.onmessage = (event) => {
-        const result = JSON.parse(event.data);
-        if (result.transcript) {
-          const chunk = result.transcript.trim();
-          if (result.is_final) {
-            finalRef.current += ` ${chunk}`;
-            setTranscript(finalRef.current.trim());
-            setQuestionInput(finalRef.current.trim());
-          } else {
-            setTranscript(`${finalRef.current} ${chunk}`);
+        try {
+          const result = JSON.parse(event.data);
+          if (result.transcript && result.is_final) {
+            const text = result.transcript.trim();
+            setQuestionInput(text);
           }
+        } catch (err) {
+          console.error("Speech parse error:", err);
         }
       };
 
@@ -173,28 +131,29 @@ export default function Home() {
 
       websocket.onclose = stopVoiceRecording;
     } catch (error) {
-      console.error("Error starting recording:", error);
+      console.error("Error starting voice recognition:", error);
     }
   };
 
   const stopVoiceRecording = () => {
     setIsRecording(false);
-    if (websocketRef.current?.readyState === WebSocket.OPEN) {
-      websocketRef.current.send("close");
-      websocketRef.current.close();
+    try {
+      websocketRef.current?.close();
+      processorRef.current?.disconnect();
+      audioContextRef.current?.close();
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+    } catch (e) {
+      console.error("Error stopping voice recording:", e);
+    } finally {
+      websocketRef.current = null;
+      audioContextRef.current = null;
+      processorRef.current = null;
+      streamRef.current = null;
     }
-    websocketRef.current = null;
-
-    processorRef.current?.disconnect();
-    streamSourceRef.current?.disconnect();
-    audioContextRef.current?.close();
-
-    mediaRecorderRef.current?.getTracks().forEach((track) => track.stop());
   };
 
   return (
     <main className="min-h-screen flex flex-col items-center px-4 py-12 md:py-16 relative">
-      {/* Background */}
       <Image
         src="/homebg.png"
         alt="Background gradient"
@@ -203,7 +162,6 @@ export default function Home() {
         className="object-cover z-0"
       />
 
-      {/* Header */}
       <header
         className="flex items-center justify-center sm:justify-start w-full max-w-5xl mb-10 sm:mb-12 z-10 cursor-pointer"
         onClick={() => router.push("/")}
@@ -216,7 +174,6 @@ export default function Home() {
         </h1>
       </header>
 
-      {/* Hero Section */}
       <section className="text-center mb-8 sm:mb-10 z-10 px-2">
         <h2
           className="text-2xl sm:text-4xl font-bold mb-2"
@@ -229,11 +186,8 @@ export default function Home() {
         </p>
       </section>
 
-      {/* Search Container */}
       <div className="backdrop-blur-md bg-white/40 rounded-3xl shadow-lg p-4 sm:p-6 w-full max-w-4xl z-10 space-y-4">
-        {/* Dropdown + Input Row */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
-          {/* Specialty */}
           <select
             value={specialty}
             onChange={(e) => setSpecialty(e.target.value)}
@@ -247,7 +201,6 @@ export default function Home() {
             ))}
           </select>
 
-          {/* Location */}
           <input
             type="text"
             placeholder="Location"
@@ -256,7 +209,6 @@ export default function Home() {
             className="flex-1 outline-none bg-transparent text-gray-700 placeholder-gray-400 border-t sm:border-l sm:border-t-0 border-gray-300 sm:ml-4 sm:pl-4 pt-3 sm:pt-0 w-full"
           />
 
-          {/* Insurance */}
           <select
             value={insurance}
             onChange={(e) => setInsurance(e.target.value)}
@@ -271,7 +223,6 @@ export default function Home() {
           </select>
         </div>
 
-        {/* Voice + Search Row */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:h-14 border border-gray-300 bg-white shadow-sm px-4 sm:px-6 py-3 sm:py-4 rounded-[1vw]">
           <div className="flex items-center flex-1 w-full">
             <i className="ri-question-line text-gray-400 text-xl mr-3"></i>
@@ -285,7 +236,6 @@ export default function Home() {
           </div>
 
           <div className="flex items-center sm:ml-4 gap-3 sm:gap-4 w-full sm:w-auto">
-            {/* Mic */}
             <button
               onClick={handleVoiceSearch}
               disabled={isLoading}
@@ -294,21 +244,20 @@ export default function Home() {
                   ? "bg-red-100 text-red-600 animate-pulse"
                   : "text-gray-700 hover:bg-gray-100"
               }`}
+              title={isRecording ? "Stop recording" : "Start recording"}
             >
-              {isRecording ? (
-                <i className="ri-mic-fill text-xl"></i>
-              ) : isLoading ? (
-                <i className="ri-loader-4-line animate-spin text-xl"></i>
-              ) : (
-                <i className="ri-mic-line text-xl"></i>
-              )}
+              <i
+                className={
+                  isRecording ? "ri-mic-fill text-xl" : "ri-mic-line text-xl"
+                }
+              ></i>
             </button>
 
-            {/* Search */}
             <button
               onClick={handleTextSearch}
               disabled={isLoading}
               className="flex items-center justify-center h-10 w-10 sm:h-9 sm:w-9 bg-[#433C50] text-white rounded-full hover:bg-[#5F72BE] transition disabled:opacity-50"
+              title="Search"
             >
               {isLoading ? (
                 <i className="ri-loader-4-line animate-spin"></i>
@@ -318,15 +267,8 @@ export default function Home() {
             </button>
           </div>
         </div>
-
-        {transcript && (
-          <p className="text-sm text-gray-600 text-center italic mt-2">
-            {transcript}
-          </p>
-        )}
       </div>
 
-      {/* Robot */}
       <div className="mt-10 sm:mt-14 w-[220px] sm:w-[320px] z-10">
         <Image
           src="/robot.png"
