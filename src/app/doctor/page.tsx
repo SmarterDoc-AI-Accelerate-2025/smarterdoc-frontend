@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import mockDoctorsData from "@/data/mockDoctors.json";
 import DoctorCard from "@/components/DoctorCard";
 import DoctorAddedPopup from "@/components/DoctorAddedPopup";
+import DoctorDeletePopup from "@/components/DoctorDeletePopup";
 
 interface Rating {
   source: string;
@@ -34,6 +35,8 @@ function DoctorPageContent() {
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<any>(null);
   const [activeDoctorId, setActiveDoctorId] = useState<number | null>(null);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [deleteDoctorInfo, setDeleteDoctorInfo] = useState<any>(null);
 
   useEffect(() => {
     const storedDoctors = localStorage.getItem("doctorResults");
@@ -87,8 +90,20 @@ function DoctorPageContent() {
   const handleCheckboxChange = (doc: Doctor) => {
     setSelectedDoctors((prev) => {
       if (prev.includes(doc.npi)) {
-        return prev.filter((id) => id !== doc.npi);
+        // Instead of directly unselecting, show confirmation popup
+        const doctorData = {
+          npi: doc.npi,
+          name: `${doc.first_name} ${doc.last_name}`,
+          specialty: doc.primary_specialty,
+          rating: doc.ratings?.[0]?.score || "N/A",
+          reviews: doc.ratings?.[0]?.count || 0,
+          img: doc.profile_picture_url || "/doctor.png",
+        };
+        setDeleteDoctorInfo(doctorData);
+        setShowDeletePopup(true);
+        return prev; // keep checked until confirmed
       } else {
+        // normal add flow
         const doctorData = {
           npi: doc.npi,
           name: `${doc.first_name} ${doc.last_name}`,
@@ -222,6 +237,19 @@ function DoctorPageContent() {
         <DoctorAddedPopup
           doctor={selectedDoctorInfo}
           onClose={() => setShowPopup(false)}
+        />
+      )}
+
+      {showDeletePopup && deleteDoctorInfo && (
+        <DoctorDeletePopup
+          doctor={deleteDoctorInfo}
+          onClose={() => setShowDeletePopup(false)}
+          onConfirm={() => {
+            setSelectedDoctors((prev) =>
+              prev.filter((id) => id !== deleteDoctorInfo.npi)
+            );
+            setShowDeletePopup(false);
+          }}
         />
       )}
     </main>

@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import DoctorAddedPopup from "@/components/DoctorAddedPopup";
+import DoctorDeletePopup from "@/components/DoctorDeletePopup";
 
 export default function DoctorDetailPage() {
   return (
@@ -31,6 +32,8 @@ function DoctorDetailPageContent() {
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<any>(null);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [deleteDoctorInfo, setDeleteDoctorInfo] = useState<any>(null);
 
   useEffect(() => {
     if (!doctorId) return;
@@ -91,7 +94,10 @@ function DoctorDetailPageContent() {
       setSelectedDoctorInfo(doctorData);
       setShowPopup(true);
     } else {
-      updated = stored.filter((d: any) => d.npi !== doctor.npi);
+      // Show delete confirmation popup instead of removing immediately
+      setDeleteDoctorInfo(doctorData);
+      setShowDeletePopup(true);
+      return;
     }
 
     localStorage.setItem("selectedDoctors", JSON.stringify(updated));
@@ -337,6 +343,25 @@ function DoctorDetailPageContent() {
         <DoctorAddedPopup
           doctor={selectedDoctorInfo}
           onClose={() => setShowPopup(false)}
+        />
+      )}
+
+      {showDeletePopup && deleteDoctorInfo && (
+        <DoctorDeletePopup
+          doctor={deleteDoctorInfo}
+          onClose={() => setShowDeletePopup(false)}
+          onConfirm={() => {
+            const stored = JSON.parse(
+              localStorage.getItem("selectedDoctors") || "[]"
+            );
+            const updated = stored.filter(
+              (d: any) => d.npi !== deleteDoctorInfo.npi
+            );
+            localStorage.setItem("selectedDoctors", JSON.stringify(updated));
+            setSelectedDoctors(updated.map((d: any) => d.npi));
+            setShowDeletePopup(false);
+            window.dispatchEvent(new Event("storage"));
+          }}
         />
       )}
     </main>
