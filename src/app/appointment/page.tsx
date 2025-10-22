@@ -95,13 +95,21 @@ export default function AppointmentPage() {
     <main className="relative min-h-screen flex flex-col items-center px-4 sm:px-6 py-8 sm:py-10">
       <Header />
 
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-6 text-center sm:text-left w-full max-w-6xl">
+      <h2
+        className="text-xl sm:text-2xl mb-6 text-center sm:text-left w-full max-w-6xl"
+        style={{ color: "var(--text-primary)", fontWeight: 600 }}
+      >
         Your Appointment
       </h2>
 
       {/* Doctor List */}
       <section className="w-full max-w-6xl z-10 mb-8 sm:mb-10 space-y-4">
-        <h3 className="font-semibold text-gray-700 mb-2 text-lg">Doctors</h3>
+        <h3
+          className="mb-2 text-lg"
+          style={{ color: "var(--text-primary)", fontWeight: 600 }}
+        >
+          Doctors
+        </h3>
         {doctors.map((doc) => (
           <div
             key={doc.npi}
@@ -116,16 +124,27 @@ export default function AppointmentPage() {
                 className="rounded-lg mb-3 sm:mb-0 sm:mr-4"
               />
               <div>
-                <h4 className="font-semibold text-gray-800 text-base sm:text-lg">
+                <h4
+                  className="text-base sm:text-lg"
+                  style={{ color: "var(--text-primary)", fontWeight: 600 }}
+                >
                   {doc.name}
                 </h4>
                 <div className="flex items-center text-yellow-500 text-sm sm:text-base">
                   <i className="ri-star-fill"></i>
-                  <span className="ml-1 text-gray-700">
+                  <span
+                    className="ml-1"
+                    style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+                  >
                     {doc.rating} ({doc.reviews} reviews)
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">{doc.specialty}</p>
+                <p
+                  className="text-sm"
+                  style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+                >
+                  {doc.specialty}
+                </p>
               </div>
             </div>
             <div className="mt-3 sm:mt-0 flex justify-end">
@@ -142,7 +161,12 @@ export default function AppointmentPage() {
 
       {/* Available Time */}
       <section className="w-full max-w-6xl bg-white rounded-xl shadow-md p-6 mb-10 z-10">
-        <h3 className="font-semibold text-gray-700 mb-4">Available Time</h3>
+        <h3
+          className="mb-4"
+          style={{ color: "var(--text-primary)", fontWeight: 600 }}
+        >
+          Available Time
+        </h3>
         <div className="grid md:grid-cols-2 gap-6">
           <div className="flex items-center justify-center">
             <DatePicker
@@ -153,7 +177,12 @@ export default function AppointmentPage() {
             />
           </div>
           <div className="flex flex-col space-y-2">
-            <h4 className="font-medium text-gray-700 mb-2">Time Picker</h4>
+            <h4
+              className="mb-2"
+              style={{ color: "var(--text-primary)", fontWeight: 500 }}
+            >
+              Time Picker
+            </h4>
             <div className="flex flex-col">
               {timeSlots.map((time) => (
                 <button
@@ -162,8 +191,13 @@ export default function AppointmentPage() {
                   className={`px-4 py-3 rounded-md mb-2 transition-all text-sm font-medium border ${
                     selectedTime === time
                       ? "bg-[#A991FF] text-white shadow-md"
-                      : "bg-[#F8F7FF] text-gray-700 border-[#DDD] hover:bg-[#EEE]"
+                      : "bg-[#F8F7FF] border-[#DDD] hover:bg-[#EEE]"
                   }`}
+                  style={{
+                    color:
+                      selectedTime === time ? "white" : "var(--text-primary)",
+                    fontWeight: selectedTime === time ? 600 : 500,
+                  }}
                 >
                   {time}
                 </button>
@@ -174,55 +208,87 @@ export default function AppointmentPage() {
       </section>
 
       {/* Information Form */}
-      <section className="w-full max-w-6xl bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sm:mb-10 text-gray-700 placeholder-gray-700">
-        <h3 className="font-semibold text-gray-700 mb-4 text-lg">
+      <section className="w-full max-w-6xl bg-white rounded-xl shadow-md p-4 sm:p-6 mb-8 sm:mb-10">
+        <h3
+          className="mb-4 text-lg"
+          style={{ color: "var(--text-primary)", fontWeight: 600 }}
+        >
           Information
         </h3>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           <input
+            type="text"
             placeholder="Legal first name"
-            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full"
+            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full text-sm"
+            style={{ color: "var(--text-primary)", fontWeight: 400 }}
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
             }
+            required
           />
           <input
+            type="text"
             placeholder="Legal last name"
-            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full"
+            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full text-sm"
+            style={{ color: "var(--text-primary)", fontWeight: 400 }}
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
             }
+            required
           />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
           <input
             placeholder="Date of birth"
-            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full"
+            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full text-sm appearance-none"
+            style={{
+              color: "var(--text-primary)",
+              fontWeight: 400,
+              backgroundColor: "white",
+            }}
             onChange={(e) =>
               setFormData({ ...formData, birth: e.target.value })
             }
+            required
           />
+
           <input
+            type="email"
             placeholder="Email"
-            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full"
+            className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full text-sm"
+            style={{ color: "var(--text-primary)", fontWeight: 400 }}
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
             }
+            required
           />
         </div>
 
         <input
+          type="tel"
           placeholder="Phone Number"
-          className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full mb-4"
+          pattern="[0-9]{10,15}"
+          className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full mb-4 text-sm"
+          style={{ color: "var(--text-primary)", fontWeight: 400 }}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          required
         />
 
         <div className="flex flex-wrap items-center mb-4 space-x-4">
-          <label className="font-medium text-gray-700">Gender:</label>
+          <label
+            className="text-sm"
+            style={{ color: "var(--text-primary)", fontWeight: 500 }}
+          >
+            Gender:
+          </label>
           {["Male", "Female", "Others"].map((g) => (
-            <label key={g} className="flex items-center space-x-1">
+            <label
+              key={g}
+              className="flex items-center space-x-1 text-sm"
+              style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+            >
               <input
                 type="radio"
                 name="gender"
@@ -230,6 +296,7 @@ export default function AppointmentPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, gender: e.target.value })
                 }
+                required
               />
               <span>{g}</span>
             </label>
@@ -238,7 +305,8 @@ export default function AppointmentPage() {
 
         <textarea
           placeholder="Write a comment..."
-          className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full h-24"
+          className="border border-gray-300 rounded-md px-3 py-2 outline-none w-full h-24 text-sm"
+          style={{ color: "var(--text-primary)", fontWeight: 400 }}
           onChange={(e) =>
             setFormData({ ...formData, comment: e.target.value })
           }
@@ -250,13 +318,13 @@ export default function AppointmentPage() {
         <button
           onClick={handleAppointment}
           disabled={isLoading}
-          className="w-full sm:w-auto cursor-pointer px-6 py-2 bg-[#5F72BE] text-white rounded-md hover:bg-[#433C50] transition disabled:opacity-50"
+          className="w-full sm:w-auto cursor-pointer px-6 py-2 bg-[#5F72BE] text-white rounded-md hover:bg-[#433C50] transition disabled:opacity-50 font-medium"
         >
           {isLoading ? "Submitting..." : "Appointment"}
         </button>
         <button
           onClick={handleCancel}
-          className="w-full sm:w-auto cursor-pointer px-6 py-2 bg-red-400 text-white rounded-md hover:bg-[#9b1c1c] transition"
+          className="w-full sm:w-auto cursor-pointer px-6 py-2 bg-red-400 text-white rounded-md hover:bg-[#9b1c1c] transition font-medium"
         >
           Cancel
         </button>
@@ -272,24 +340,43 @@ export default function AppointmentPage() {
             className="bg-white rounded-xl p-6 sm:p-8 shadow-lg text-center relative w-[90%] sm:w-[360px] h-auto sm:h-[260px] flex flex-col justify-center"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Close Button */}
             <button
-              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+              className="absolute top-3 right-3 hover:opacity-70 transition"
               onClick={closePopup}
+              style={{ color: "var(--text-secondary)" }}
             >
               <i className="ri-close-line text-lg sm:text-xl"></i>
             </button>
 
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">
+            {/* Title */}
+            <h3
+              className="text-lg sm:text-xl mb-2"
+              style={{ color: "var(--text-primary)", fontWeight: 600 }}
+            >
               Appointment submitted!
             </h3>
-            <p className="text-gray-600 mb-1 text-sm sm:text-base">
+
+            {/* Subtext */}
+            <p
+              className="mb-1 text-sm sm:text-base"
+              style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+            >
               Our system is matching your details with top specialists.
             </p>
-            <p className="text-gray-600 text-sm sm:text-base">
+            <p
+              className="text-sm sm:text-base"
+              style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+            >
               You&apos;ll get an update via email soon!
             </p>
+
+            {/* Icon */}
             <div className="mt-4 sm:mt-6 flex justify-center">
-              <i className="ri-check-double-line text-3xl sm:text-4xl text-[#8C57FF]"></i>
+              <i
+                className="ri-check-double-line text-3xl sm:text-4xl"
+                style={{ color: "#8C57FF" }}
+              ></i>
             </div>
           </div>
         </div>
