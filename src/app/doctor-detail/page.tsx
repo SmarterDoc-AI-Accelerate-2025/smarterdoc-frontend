@@ -122,46 +122,71 @@ function DoctorDetailPageContent() {
       <Header />
 
       {/* Doctor Profile */}
-      <section className="w-full max-w-6xl z-10 mb-10 bg-white border border-gray-200 rounded-3xl shadow-md p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-          {/* Doctor info */}
-          <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-0">
-            <Image
-              src={doctor.profile_picture_url || "/doctor.png"}
-              alt={`${doctor.first_name} ${doctor.last_name}`}
-              width={100}
-              height={100}
-              className="rounded-xl mb-4 sm:mb-0 sm:mr-6 object-cover"
-            />
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                {doctor.first_name} {doctor.last_name}
-              </h2>
-              <p className="text-gray-500">{doctor.primary_specialty}</p>
-              <div className="flex items-center text-yellow-500 mt-2 text-sm sm:text-base">
-                <i className="ri-star-fill"></i>
-                <span className="ml-1 text-gray-700">
-                  {doctor.ratings?.[0]?.score ?? "N/A"} (
-                  {doctor.ratings?.[0]?.count ?? 0} reviews)
-                </span>
-              </div>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                <i className="ri-map-pin-2-line mr-1 text-gray-400"></i>
-                {doctor.address}
-              </p>
-            </div>
+      <section className="relative flex flex-col sm:flex-row sm:justify-between sm:items-center w-full max-w-6xl z-10 mb-10 bg-white rounded-3xl">
+        <label
+          className="absolute top-10 right-4 flex items-center text-sm"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            className="mr-2 w-4 h-4 accent-[#9D73F7]"
+            checked={isSelected}
+            onChange={(e) => handleSelectDoctor(e.target.checked)}
+          />
+          <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>
+            AI Appointment
+          </span>
+        </label>
+        {/* Doctor Image */}
+        <div className="flex-shrink-0 rounded-xl overflow-hidden mb-3 sm:mb-0 sm:mr-5 w-full sm:w-[160px] h-[180px] sm:h-[160px] bg-gray-100">
+          <Image
+            src={doctor.profile_picture_url || "/doctor.png"}
+            alt={`${doctor.first_name} ${doctor.last_name}`}
+            width={160}
+            height={160}
+            className="object-cover w-full h-full"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            priority={false}
+          />
+        </div>
+        {/* Doctor Info */}
+        <div className="flex-1 flex flex-col justify-center space-y-2 sm:space-y-3">
+          {/* Name */}
+          <h3
+            className="text-lg sm:text-xl"
+            style={{ color: "var(--text-primary)", fontWeight: 600 }}
+          >
+            Dr. {doctor.first_name} {doctor.last_name}
+          </h3>
+
+          {/* Specialty */}
+          <p
+            className="text-sm"
+            style={{ color: "var(--text-primary)", fontWeight: 400 }}
+          >
+            {doctor.primary_specialty}
+          </p>
+
+          {/* Rating Section */}
+          <div className="flex items-center text-xs my-1 space-x-1">
+            <i className="ri-star-fill text-yellow-500 text-sm relative top-[1px]"></i>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>
+              {doctor.ratings?.[0]?.score ?? "N/A"}
+            </span>
+            <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>
+              ({doctor.ratings?.[0]?.count ?? 0} reviews)
+            </span>
           </div>
 
-          {/* AI Appointment */}
-          <label className="cursor-pointer flex items-center text-sm text-gray-600 justify-end sm:justify-start">
-            <input
-              type="checkbox"
-              className="mr-2 cursor-pointer"
-              checked={isSelected}
-              onChange={(e) => handleSelectDoctor(e.target.checked)}
-            />
-            AI Appointment
-          </label>
+          {/* Address */}
+          <p
+            className="flex items-center text-xs"
+            style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+          >
+            <i className="ri-map-pin-2-line text-[#5F72BE] text-sm relative top-[1px] mr-1"></i>
+            <span>{doctor.address}</span>
+          </p>
         </div>
       </section>
 
@@ -190,13 +215,17 @@ function DoctorDetailPageContent() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base transition-all ${
+              className={`flex items-center px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base font-medium transition-all ${
                 activeTab === tab.id
                   ? "bg-[#8C57FF] text-white"
-                  : "cursor-pointer text-gray-600 hover:bg-gray-100"
+                  : "cursor-pointer hover:bg-gray-100"
               }`}
+              style={{
+                color: activeTab === tab.id ? "white" : "var(--text-primary)",
+                fontWeight: activeTab === tab.id ? 600 : 500,
+              }}
             >
-              <i className={`${tab.icon} mr-2`}></i> {tab.label}
+              <i className={`${tab.icon} mr-2 text-base`}></i> {tab.label}
             </button>
           ))}
         </div>
@@ -205,28 +234,58 @@ function DoctorDetailPageContent() {
         <div className="border-2 border-[#9D73F7] bg-white rounded-xl shadow-md p-4 sm:p-6 text-sm sm:text-base">
           {activeTab === "about" && (
             <div>
-              <h3 className="font-semibold text-gray-700 mb-2">Biography</h3>
-              <p className="text-gray-600 mb-4">{doctor.bio}</p>
+              <h3
+                className="mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
+                Biography
+              </h3>
+              <p
+                className="mb-4 leading-relaxed"
+                style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+              >
+                {doctor.bio}
+              </p>
 
-              <h3 className="font-semibold text-gray-700 mb-2">
+              <h3
+                className="mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
                 Testimonial Summary
               </h3>
-              <p className="text-gray-600">{doctor.testimonial_summary_text}</p>
+              <p style={{ color: "var(--text-secondary)", fontWeight: 400 }}>
+                {doctor.testimonial_summary_text}
+              </p>
             </div>
           )}
 
           {activeTab === "education" && (
             <div>
-              <h3 className="font-semibold text-gray-700 mb-2">Education</h3>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
+              <h3
+                className="mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
+                Education
+              </h3>
+              <ul
+                className="list-disc list-inside space-y-1"
+                style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+              >
                 {doctor.education?.map((item: string, i: number) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
-              <h3 className="font-semibold text-gray-700 mt-4 mb-2">
+
+              <h3
+                className="mt-4 mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
                 Hospitals
               </h3>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
+              <ul
+                className="list-disc list-inside space-y-1"
+                style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+              >
                 {doctor.hospitals?.map((h: string, i: number) => (
                   <li key={i}>{h}</li>
                 ))}
@@ -236,7 +295,16 @@ function DoctorDetailPageContent() {
 
           {activeTab === "certifications" && (
             <div>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
+              <h3
+                className="mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
+                Certifications
+              </h3>
+              <ul
+                className="list-disc list-inside space-y-1"
+                style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+              >
                 {doctor.certifications?.map((c: string, i: number) => (
                   <li key={i}>{c}</li>
                 ))}
@@ -246,7 +314,16 @@ function DoctorDetailPageContent() {
 
           {activeTab === "publications" && (
             <div>
-              <ul className="list-disc list-inside text-gray-600 space-y-1">
+              <h3
+                className="mb-2 text-base"
+                style={{ color: "var(--text-primary)", fontWeight: 600 }}
+              >
+                Publications
+              </h3>
+              <ul
+                className="list-disc list-inside space-y-1"
+                style={{ color: "var(--text-secondary)", fontWeight: 400 }}
+              >
                 {doctor.publications?.map((p: string, i: number) => (
                   <li key={i}>{p}</li>
                 ))}
