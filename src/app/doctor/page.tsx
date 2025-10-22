@@ -33,6 +33,7 @@ function DoctorPageContent() {
   const [selectedDoctors, setSelectedDoctors] = useState<string[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedDoctorInfo, setSelectedDoctorInfo] = useState<any>(null);
+  const [activeDoctorId, setActiveDoctorId] = useState<number | null>(null);
 
   useEffect(() => {
     const storedDoctors = localStorage.getItem("doctorResults");
@@ -170,12 +171,25 @@ function DoctorPageContent() {
                   doctor={doc}
                   selectedDoctors={selectedDoctors}
                   onCheckboxChange={handleCheckboxChange}
+                  onHover={() => setActiveDoctorId(Number(doc.npi) || null)}
                   type="top3"
                 />
               ))}
             </div>
             <div className="h-[300px] sm:h-auto rounded-xl overflow-hidden">
-              <DoctorMap doctors={doctorsForMap} />
+              <DoctorMap
+                doctors={doctorsForMap}
+                activeDoctorId={activeDoctorId}
+                onDoctorSelect={(id) => {
+                  setActiveDoctorId(id);
+                  const element = document.getElementById(`doctor-${id}`);
+                  if (element)
+                    element.scrollIntoView({
+                      behavior: "smooth",
+                      block: "center",
+                    });
+                }}
+              />
             </div>
           </div>
         </section>
@@ -197,6 +211,7 @@ function DoctorPageContent() {
               doctor={doc}
               selectedDoctors={selectedDoctors}
               onCheckboxChange={handleCheckboxChange}
+              onHover={() => setActiveDoctorId(Number(doc.npi) || null)}
               type="normal"
             />
           ))}
