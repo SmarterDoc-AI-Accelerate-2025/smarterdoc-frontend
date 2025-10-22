@@ -1,24 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect } from "react";
 import Image from "next/image";
 
-interface DoctorAddedPopupProps {
+interface DoctorDeletePopupProps {
   doctor: any;
   onClose: () => void;
+  onConfirm: () => void;
 }
 
-export default function DoctorAddedPopup({
+export default function DoctorDeletePopup({
   doctor,
   onClose,
-}: DoctorAddedPopupProps) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
+  onConfirm,
+}: DoctorDeletePopupProps) {
   if (!doctor) return null;
 
   return (
@@ -27,7 +21,7 @@ export default function DoctorAddedPopup({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl p-6 shadow-lg text-center relative w-[520px] h-[240px] flex flex-col items-center justify-center"
+        className="bg-white rounded-xl p-6 shadow-lg text-center relative w-[520px] min-h-[280px] flex flex-col items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close Button */}
@@ -41,14 +35,14 @@ export default function DoctorAddedPopup({
 
         {/* Title */}
         <h3
-          className="text-lg sm:text-xl mb-8"
+          className="text-lg sm:text-xl mb-6"
           style={{ color: "var(--text-primary)", fontWeight: 600 }}
         >
-          Added for your Appointment!
+          Delete this Doctor Appointment?
         </h3>
 
         {/* Doctor Info */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 mb-8">
           <Image
             src={doctor.img || "/doctor.png"}
             alt={doctor.name}
@@ -79,6 +73,28 @@ export default function DoctorAddedPopup({
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 rounded-md transition"
+            style={{
+              color: "var(--text-secondary)",
+              fontWeight: 500,
+              backgroundColor: "transparent",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-6 py-2 rounded-md bg-red-500 hover:bg-red-600 transition text-white"
+            style={{ fontWeight: 600 }}
+          >
+            Confirm
+          </button>
         </div>
       </div>
     </div>
