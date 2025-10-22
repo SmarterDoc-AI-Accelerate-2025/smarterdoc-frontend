@@ -27,12 +27,14 @@ interface DoctorCardProps {
   selectedDoctors: string[];
   onCheckboxChange: (doctor: Doctor) => void;
   type?: "top3" | "normal";
+  onHover?: () => void;
 }
 
 export default function DoctorCard({
   doctor,
   selectedDoctors,
   onCheckboxChange,
+  onHover,
   type = "normal",
 }: DoctorCardProps) {
   const getRatingInfo = (ratings: Rating[]) => {
@@ -51,6 +53,9 @@ export default function DoctorCard({
       <Link
         href={`/doctor-detail?id=${doctor.npi}`}
         key={doctor.npi}
+        id={`doctor-${doctor.npi}`}
+        onMouseEnter={onHover}
+        onMouseLeave={() => onHover && onHover()}
         className="cursor-pointer relative flex flex-col sm:flex-row bg-white rounded-2xl p-4 sm:p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200"
       >
         {/* AI Appointment Checkbox */}
@@ -126,6 +131,9 @@ export default function DoctorCard({
     <Link
       href={`/doctor-detail?id=${doctor.npi}`}
       key={doctor.npi}
+      id={`doctor-${doctor.npi}`}
+      onMouseEnter={onHover}
+      onMouseLeave={() => onHover && onHover()}
       className="relative flex flex-col sm:flex-row items-center bg-[#F9F9FB] rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition duration-200"
     >
       {/* AI Appointment Checkbox */}
