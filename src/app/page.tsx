@@ -117,12 +117,10 @@ export default function Home() {
           const result = JSON.parse(event.data);
           if (result.transcript && result.is_final) {
             const text = result.transcript.trim();
-            setQuestionInput(prevText => {
-              // 如果当前文本为空，直接设置新文本
+            setQuestionInput((prevText) => {
               if (!prevText.trim()) {
                 return text;
               }
-              // 否则追加到现有文本后面
               return prevText + " " + text;
             });
           }
@@ -189,7 +187,7 @@ export default function Home() {
           Smart guidance to the right doctor
         </h2>
         <p className="text-base sm:text-lg bg-gradient-to-r from-[#5F72BE] to-[#9921E8] bg-clip-text text-transparent">
-          We connect you with the best care — clearly, fairly, and personally.
+          AI-Curated Personal Care
         </p>
       </section>
 
@@ -237,7 +235,7 @@ export default function Home() {
             <i className="ri-search-line text-gray-400 text-xl mr-3"></i>
             <input
               type="text"
-              placeholder="Ask a question..."
+              placeholder="Tell me what kind of medical care you're looking for today"
               value={questionInput}
               onChange={(e) => setQuestionInput(e.target.value)}
               className="input-text flex-1 outline-none bg-transparent"
