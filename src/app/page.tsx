@@ -117,7 +117,14 @@ export default function Home() {
           const result = JSON.parse(event.data);
           if (result.transcript && result.is_final) {
             const text = result.transcript.trim();
-            setQuestionInput(text);
+            setQuestionInput(prevText => {
+              // 如果当前文本为空，直接设置新文本
+              if (!prevText.trim()) {
+                return text;
+              }
+              // 否则追加到现有文本后面
+              return prevText + " " + text;
+            });
           }
         } catch (err) {
           console.error("Speech parse error:", err);
