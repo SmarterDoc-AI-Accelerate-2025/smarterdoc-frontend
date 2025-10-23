@@ -125,6 +125,10 @@ function DoctorPageContent() {
     lat: doc.latitude,
     lng: doc.longitude,
     address: doc.address,
+    specialty: doc.primary_specialty,
+    rating: doc.ratings?.[0]?.score ?? "N/A",
+    reviews: doc.ratings?.[0]?.count ?? 0,
+    img: doc.profile_picture_url || "/doctor.png",
   }));
 
   return (
