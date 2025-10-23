@@ -32,6 +32,13 @@ The SmarterDoc frontend provides:
 * `/doctor-detail` — Individual doctor profile and details
 * `/appointment` — Appointment scheduling and confirmation
 
+### Frontend System Flow
+
+The diagram below illustrates the full data and user interaction flow across the frontend, backend, and AI layers.
+
+![Frontend System Flow](/Users/hoganlin/SmarterDoc-Ai-Accelerate-2025/smarterdoc-frontend/frontend_flow.png)
+
+
 ---
 
 ## Tech Stack
