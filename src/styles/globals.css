@@ -25,6 +25,15 @@ body {
   font-family: var(--font-inter), sans-serif;
 }
 
+select {
+  position: relative;
+  transform: none !important;
+}
+
+select:focus {
+  position: relative;
+}
+
 
 .react-datepicker {
   display: flex;
